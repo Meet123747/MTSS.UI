@@ -1,209 +1,10 @@
 
 @{
     ViewData["Title"] = "Settings";
-    Layout = null;
+    Layout = "_SuperAdminLayout";
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MTSS | Settings</title>
 
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-
-    <style>
-        body {
-            margin: 0;
-            background: #f4f6fa;
-            font-family: Arial, sans-serif;
-        }
-
-        .sidebar {
-            width: 250px;
-            min-height: 100vh;
-            background: #17243a;
-            color: white;
-            position: fixed;
-            padding: 25px 18px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .brand {
-            font-size: 25px;
-            font-weight: bold;
-            margin-bottom: 40px;
-        }
-
-        .nav-link {
-            color: #cbd5e1;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            border-radius: 7px;
-            text-decoration: none;
-        }
-
-            .nav-link.active, .nav-link:hover {
-                background: #2563eb;
-                color: white;
-            }
-
-        .logout-link {
-            color: #fca5a5;
-            cursor: pointer;
-        }
-
-            .logout-link:hover {
-                background: #dc2626;
-                color: white;
-            }
-
-        .sidebar-bottom {
-            margin-top: auto;
-        }
-
-        .main-content {
-            margin-left: 250px;
-            padding: 30px;
-        }
-
-        .settings-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 3px 15px rgba(0,0,0,.04);
-            margin-bottom: 22px;
-        }
-
-        .section-heading {
-            color: #17243a;
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-
-        .setting-label {
-            color: #64748b;
-            font-size: 13px;
-            margin-bottom: 6px;
-        }
-
-        .setting-value {
-            color: #17243a;
-            font-weight: 600;
-        }
-
-        .setting-row {
-            padding: 15px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-            .setting-row:last-child {
-                border-bottom: none;
-            }
-
-        .info-icon {
-            width: 42px;
-            height: 42px;
-            background: #eff6ff;
-            color: #2563eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            font-size: 20px;
-        }
-
-        .status-badge {
-            background: #dcfce7;
-            color: #15803d;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        @@media(max-width:768px) {
-            .sidebar {
-                width: 100%;
-                min-height: auto;
-                position: relative;
-            }
-
-            .sidebar-bottom {
-                margin-top: 15px;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 18px;
-            }
-        }
-    
-        .sidebar-bottom {
-            margin-top: auto;
-            padding-top: 16px;
-        }
-
-        .logout-link {
-            display: block;
-            width: 100%;
-            text-align: left;
-            color: #fca5a5;
-            background: transparent;
-            border: 0;
-            border-radius: 7px;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            font: inherit;
-            text-decoration: none;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        .logout-link:hover,
-        .logout-link:focus {
-            background: #dc2626;
-            color: #ffffff;
-        }
-
-    </style>
-</head>
-
-<body>
-
-    <aside class="sidebar">
-        <div class="brand">MTSS</div>
-
-        <p class="text-uppercase text-secondary small">Main Menu</p>
-
-        <nav class="nav flex-column">
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Index">Dashboard</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Societies">Societies</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="SubscriptionPlans">Subscription Plans</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="SocietySubscriptions">Society Subscriptions</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Payments">Payments</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Reports">Reports</a>
-            <a class="nav-link active" asp-controller="SuperAdmin" asp-action="Settings">Settings</a>
-        </nav>
-
-        <div class="sidebar-bottom">
-        </div>
-    
-        <div class="sidebar-bottom">
-            <form asp-controller="Auth" asp-action="Logout" method="post">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="logout-link">
-                    Logout
-                </button>
-            </form>
-        </div>
-
-    </aside>
-
-    <main class="main-content">
 
         <div class="mb-4">
             <h2 class="fw-semibold mb-1">Settings</h2>
@@ -214,7 +15,7 @@
 
         <div class="settings-card">
             <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="info-icon">👤</div>
+                <div class="info-icon"><span data-icon="user"></span></div>
                 <div>
                     <h5 class="mb-1">Account Information</h5>
                     <p class="text-secondary small mb-0">
@@ -236,7 +37,7 @@
 
         <div class="settings-card">
             <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="info-icon">⚙️</div>
+                <div class="info-icon"><span data-icon="settings"></span></div>
                 <div>
                     <h5 class="mb-1">Platform Information</h5>
                     <p class="text-secondary small mb-0">
@@ -263,7 +64,7 @@
 
         <div class="settings-card">
             <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="info-icon">🔒</div>
+                <div class="info-icon"><span data-icon="shield"></span></div>
                 <div>
                     <h5 class="mb-1">Security</h5>
                     <p class="text-secondary small mb-0">
@@ -293,8 +94,3 @@
         <div class="text-secondary small text-center mt-4">
             MTSS Administration Panel
         </div>
-
-    </main>
-
-</body>
-</html>

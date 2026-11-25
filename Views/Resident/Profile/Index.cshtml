@@ -1,0 +1,42 @@
+@{
+    ViewData["Title"] = "My Profile";
+    ViewData["PageHeading"] = "My profile";
+}
+
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">ACCOUNT</div>
+        <h1 class="page-title">My Profile</h1>
+        <p class="page-subtitle">Your authenticated resident account details.</p>
+    </div>
+    <a class="btn btn-outline-resident" asp-action="Dashboard">← Back to Overview</a>
+</div>
+
+<div class="resident-card resident-card-body mb-4">
+    <div class="mb-3">
+        <h2 class="section-heading">Account Information</h2>
+        <div class="section-note">Loaded from your authenticated MTSS session</div>
+    </div>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <small>Full Name</small>
+            <strong>@(string.IsNullOrWhiteSpace(ViewBag.FullName as string) ? "—" : ViewBag.FullName)</strong>
+        </div>
+        <div class="detail-item">
+            <small>Email Address</small>
+            <strong>@(string.IsNullOrWhiteSpace(ViewBag.Email as string) ? "—" : ViewBag.Email)</strong>
+        </div>
+        <div class="detail-item">
+            <small>User ID</small>
+            <strong>@(string.IsNullOrWhiteSpace(ViewBag.UserId as string) ? "—" : ViewBag.UserId)</strong>
+        </div>
+        <div class="detail-item">
+            <small>Role</small>
+            <strong>@(string.IsNullOrWhiteSpace(ViewBag.Roles as string) ? "Resident" : ViewBag.Roles)</strong>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info resident-alert mb-0">
+    <strong>Backend capability note:</strong> Self-service resident profile endpoints (for viewing society/flat assignment, mobile number, home/away status, or editing personal details) are not currently exposed by the MTSS backend API. Contact your Society Admin to update flat or contact records.
+</div>

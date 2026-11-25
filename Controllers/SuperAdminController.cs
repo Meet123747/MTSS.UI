@@ -960,6 +960,54 @@ namespace MTSS.UI.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteSubscriptionPlan(
+            int id,
+            CancellationToken cancellationToken)
+        {
+            if (id <= 0)
+            {
+                return BadRequest();
+            }
+
+            try
+            {
+                using var response = await _apiService.DeleteAsync(
+                    $"/api/superadmin/subscription-plans/{id}",
+                    cancellationToken);
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    return RedirectToAction("Login", "Auth");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                    var error = "Unable to delete subscription plan.";
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(body);
+                        if (doc.RootElement.TryGetProperty("message", out var msg) && msg.ValueKind == JsonValueKind.String)
+                            error = msg.GetString() ?? error;
+                    }
+                    catch (JsonException) { }
+
+                    TempData["ErrorMessage"] = error;
+                    return RedirectToAction(nameof(SubscriptionPlans));
+                }
+
+                TempData["SuccessMessage"] = "Subscription plan deleted successfully.";
+                return RedirectToAction(nameof(SubscriptionPlans));
+            }
+            catch (HttpRequestException)
+            {
+                TempData["ErrorMessage"] = "Unable to connect to the MTSS backend.";
+                return RedirectToAction(nameof(SubscriptionPlans));
+            }
+        }
+
 
 
         // SuperAdmin Reports - reuses the existing societies and plans APIs.

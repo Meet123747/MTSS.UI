@@ -81,38 +81,108 @@ public class ResidentController : Controller
         return (data.Clone(), null, false);
     }
 
+    private static string ReadStringProp(JsonElement row, string key) =>
+        row.ValueKind == JsonValueKind.Object &&
+        row.TryGetProperty(key, out var prop) &&
+        prop.ValueKind != JsonValueKind.Null
+            ? prop.ToString()
+            : "";
+
     [HttpGet]
     public async Task<IActionResult> Dashboard(CancellationToken cancellationToken)
     {
         if (!IsResidentSignedIn()) return LoginRedirect();
 
+        ViewBag.FullName = HttpContext.Session.GetString("FullName") ?? "Resident";
+        ViewBag.Email = HttpContext.Session.GetString("Email") ?? "";
+
         try
         {
-            var complaints = await GetRows("api/resident/complaints", cancellationToken);
-            if (complaints.Unauthorized) return LoginRedirect();
+            var complaintsTask = GetRows("api/resident/complaints", cancellationToken);
+            var notificationsTask = GetRows("api/resident/notifications", cancellationToken);
+            var pinsTask = GetRows("api/resident/amenity-pins", cancellationToken);
+            await Task.WhenAll(complaintsTask, notificationsTask, pinsTask);
 
-            var notifications = await GetRows("api/resident/notifications", cancellationToken);
-            if (notifications.Unauthorized) return LoginRedirect();
+            var complaints = complaintsTask.Result;
+            var notifications = notificationsTask.Result;
+            var pins = pinsTask.Result;
 
-            var pins = await GetRows("api/resident/amenity-pins", cancellationToken);
-            if (pins.Unauthorized) return LoginRedirect();
+            if (complaints.Unauthorized || notifications.Unauthorized || pins.Unauthorized)
+                return LoginRedirect();
 
             ViewBag.ComplaintCount = complaints.Rows.Count;
+            ViewBag.OpenComplaintCount = complaints.Rows.Count(r =>
+                ReadStringProp(r, "status").Equals("Open", StringComparison.OrdinalIgnoreCase) ||
+                ReadStringProp(r, "status").Equals("Pending", StringComparison.OrdinalIgnoreCase));
+            ViewBag.InProgressComplaintCount = complaints.Rows.Count(r =>
+                ReadStringProp(r, "status").Contains("Progress", StringComparison.OrdinalIgnoreCase));
+            ViewBag.ResolvedComplaintCount = complaints.Rows.Count(r =>
+                ReadStringProp(r, "status").Equals("Resolved", StringComparison.OrdinalIgnoreCase) ||
+                ReadStringProp(r, "status").Equals("Approved", StringComparison.OrdinalIgnoreCase));
+            ViewBag.RecentComplaints = complaints.Rows.Take(5).ToList();
+
             ViewBag.NotificationCount = notifications.Rows.Count;
-            ViewBag.PinCount = pins.Rows.Count;
+            ViewBag.UnreadNotificationCount = notifications.Rows.Count(r =>
+                !ReadStringProp(r, "isRead").Equals("true", StringComparison.OrdinalIgnoreCase));
             ViewBag.RecentNotifications = notifications.Rows.Take(5).ToList();
+
+            ViewBag.PinCount = pins.Rows.Count;
+            ViewBag.ActivePinCount = pins.Rows.Count(r =>
+            {
+                var status = ReadStringProp(r, "status");
+                return !status.Contains("Revoked", StringComparison.OrdinalIgnoreCase) &&
+                       !status.Contains("Used", StringComparison.OrdinalIgnoreCase) &&
+                       !status.Contains("Expired", StringComparison.OrdinalIgnoreCase);
+            });
+            ViewBag.RecentPins = pins.Rows.Take(5).ToList();
+
             ViewBag.ComplaintError = complaints.Error;
             ViewBag.NotificationError = notifications.Error;
             ViewBag.PinError = pins.Error;
-            ViewBag.FullName = HttpContext.Session.GetString("FullName") ?? "Resident";
             return View("~/Views/Resident/Dashboard/Index.cshtml");
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
         {
             ViewBag.ErrorMessage = "We couldn't load your resident overview. Please try again.";
-            ViewBag.FullName = HttpContext.Session.GetString("FullName") ?? "Resident";
             return View("~/Views/Resident/Dashboard/Index.cshtml");
         }
+    }
+
+    [HttpGet]
+    public IActionResult Guests()
+    {
+        if (!IsResidentSignedIn()) return LoginRedirect();
+        return View("~/Views/Resident/Guests/Index.cshtml");
+    }
+
+    [HttpGet]
+    public IActionResult Parcels()
+    {
+        if (!IsResidentSignedIn()) return LoginRedirect();
+
+        // The current backend only exposes /api/societyadmin/parcels (SocietyAdmin-only).
+        // Do not call SocietyAdmin endpoints from a Resident session.
+        ViewBag.EndpointUnavailable = true;
+        ViewBag.Rows = new List<JsonElement>();
+        return View("~/Views/Resident/Parcels/Index.cshtml");
+    }
+
+    [HttpGet]
+    public IActionResult ParcelDetails(int id)
+    {
+        if (!IsResidentSignedIn()) return LoginRedirect();
+        return RedirectToAction(nameof(Parcels));
+    }
+
+    [HttpGet]
+    public IActionResult Profile()
+    {
+        if (!IsResidentSignedIn()) return LoginRedirect();
+        ViewBag.UserId = HttpContext.Session.GetString("UserId") ?? "";
+        ViewBag.FullName = HttpContext.Session.GetString("FullName") ?? "Resident";
+        ViewBag.Email = HttpContext.Session.GetString("Email") ?? "";
+        ViewBag.Roles = HttpContext.Session.GetString("Roles") ?? "Resident";
+        return View("~/Views/Resident/Profile/Index.cshtml");
     }
 
     [HttpGet]
@@ -287,10 +357,42 @@ public class ResidentController : Controller
         return View("~/Views/Resident/Amenities/Index.cshtml");
     }
 
+    private async Task<bool> LoadKnownAmenitiesFromPinHistoryAsync(CancellationToken cancellationToken)
+    {
+        // The current backend does not expose a resident-scoped amenities list endpoint.
+        // Use the existing GET /api/resident/amenity-pins endpoint to surface any amenities
+        // the resident has previously generated PINs for as quick-fill suggestions.
+        var knownAmenities = new List<(string Id, string Name)>();
+        try
+        {
+            var result = await GetRows("api/resident/amenity-pins", cancellationToken);
+            if (result.Unauthorized) return false;
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in result.Rows)
+            {
+                var aid = ReadStringProp(row, "amenityId");
+                var name = ReadStringProp(row, "amenityName");
+                if (!string.IsNullOrWhiteSpace(aid) && seen.Add(aid))
+                {
+                    knownAmenities.Add((aid, string.IsNullOrWhiteSpace(name) ? $"Amenity #{aid}" : name));
+                }
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            // Non-fatal: the manual Amenity ID input remains usable.
+        }
+
+        ViewBag.KnownAmenities = knownAmenities;
+        return true;
+    }
+
     [HttpGet]
-    public IActionResult GeneratePin()
+    public async Task<IActionResult> GeneratePin(CancellationToken cancellationToken)
     {
         if (!IsResidentSignedIn()) return LoginRedirect();
+        if (!await LoadKnownAmenitiesFromPinHistoryAsync(cancellationToken)) return LoginRedirect();
         return View("~/Views/Resident/Amenities/GeneratePin.cshtml");
     }
 
@@ -300,7 +402,8 @@ public class ResidentController : Controller
         if (!IsResidentSignedIn()) return LoginRedirect();
         if (amenityId <= 0)
         {
-            ViewBag.ErrorMessage = "Enter a valid amenity ID.";
+            await LoadKnownAmenitiesFromPinHistoryAsync(cancellationToken);
+            ViewBag.ErrorMessage = "Please enter a valid Amenity ID.";
             ViewBag.AmenityId = amenityId;
             return View("~/Views/Resident/Amenities/GeneratePin.cshtml");
         }
@@ -316,6 +419,7 @@ public class ResidentController : Controller
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
+                await LoadKnownAmenitiesFromPinHistoryAsync(cancellationToken);
                 ViewBag.ErrorMessage = ReadMessage(body, $"PIN generation failed (HTTP {(int)response.StatusCode}).");
                 ViewBag.AmenityId = amenityId;
                 return View("~/Views/Resident/Amenities/GeneratePin.cshtml");
@@ -328,6 +432,7 @@ public class ResidentController : Controller
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
         {
+            await LoadKnownAmenitiesFromPinHistoryAsync(cancellationToken);
             ViewBag.ErrorMessage = "Unable to generate a PIN right now.";
             ViewBag.AmenityId = amenityId;
             return View("~/Views/Resident/Amenities/GeneratePin.cshtml");

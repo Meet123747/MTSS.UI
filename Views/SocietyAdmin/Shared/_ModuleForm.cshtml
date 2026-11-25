@@ -1,0 +1,211 @@
+@using System.Text.Json
+@{
+    var module = (string)ViewBag.Module;
+    var fields = ViewBag.Fields as string[] ?? Array.Empty<string>();
+    var labels = ViewBag.Labels as string[] ?? Array.Empty<string>();
+    var values = ViewBag.Values as Dictionary<string, string> ?? new();
+
+    var wings = ViewBag.Wings as List<JsonElement> ?? new();
+    var floors = ViewBag.Floors as List<JsonElement> ?? new();
+    var flats = ViewBag.Flats as List<JsonElement> ?? new();
+    var residents = ViewBag.Residents as List<JsonElement> ?? new();
+
+    string Prop(JsonElement el, params string[] keys)
+    {
+        if (el.ValueKind != JsonValueKind.Object) return "";
+        foreach (var k in keys)
+        {
+            if (el.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null)
+                return v.ToString();
+        }
+        return "";
+    }
+
+    var wingNames = wings.ToDictionary(w => Prop(w, "wingId", "id"), w => Prop(w, "name"));
+    var floorLabels = floors.ToDictionary(
+        f => Prop(f, "floorId", "id"),
+        f =>
+        {
+            var wName = Prop(f, "wingName");
+            if (string.IsNullOrEmpty(wName)) wingNames.TryGetValue(Prop(f, "wingId"), out wName);
+            var fName = Prop(f, "name");
+            var fNum = Prop(f, "floorNumber");
+            var prefix = string.IsNullOrEmpty(wName) ? "" : wName + " — ";
+            return $"{prefix}{fName}" + (string.IsNullOrEmpty(fNum) ? "" : $" (Floor {fNum})");
+        });
+    var flatLabels = flats.ToDictionary(
+        fl => Prop(fl, "flatId", "id"),
+        fl =>
+        {
+            var flNum = Prop(fl, "flatNumber");
+            var fId = Prop(fl, "floorId");
+            if (floorLabels.TryGetValue(fId, out var flLabel) && !string.IsNullOrEmpty(flLabel))
+                return $"{flLabel} — {flNum}";
+            return flNum;
+        });
+}
+
+<div class="sa-form-shell">
+    <div class="mtss-page-header">
+        <div>
+            <div class="mtss-eyebrow">Society Administration</div>
+            <h1 class="mtss-page-title">@(ViewBag.Id == null ? "Add " : "Edit ")@ViewBag.Title</h1>
+            <p class="mtss-page-subtitle">Enter the details below. Relationship fields are populated from your society's records.</p>
+        </div>
+        <a asp-action="Index" asp-route-module="@module" class="mtss-btn mtss-btn-outline"><span data-icon="arrowLeft" class="mtss-icon-sm"></span> Back to @ViewBag.Title</a>
+    </div>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger mtss-alert">@ViewBag.ErrorMessage</div>
+    }
+
+    <div class="mtss-card mtss-card-body">
+            <form asp-action="@(ViewBag.Id == null ? "Create" : "Edit")" method="post" class="sa-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="module" value="@module" />
+                @if (ViewBag.Id != null)
+                {
+                    <input type="hidden" name="id" value="@ViewBag.Id" />
+                }
+
+                @for (int i = 0; i < fields.Length; i++)
+                {
+                    var f = fields[i];
+                    var label = i < labels.Length ? labels[i] : f;
+                    var currentVal = values.GetValueOrDefault(f) ?? "";
+
+                    <div class="sa-form-field">
+                        <label class="form-label fw-semibold" for="f_@f">@label</label>
+
+                        @if (f == "wingId")
+                        {
+                            <select class="form-select" id="f_@f" name="fields[@f]" required>
+                                <option value="">-- Select Wing --</option>
+                                @foreach (var w in wings)
+                                {
+                                    var wid = Prop(w, "wingId", "id");
+                                    <option value="@wid" selected="@(currentVal == wid ? "selected" : null)">@Prop(w, "name")</option>
+                                }
+                            </select>
+                        }
+                        else if (f == "floorId")
+                        {
+                            <select class="form-select" id="f_@f" name="fields[@f]" required>
+                                <option value="">-- Select Floor --</option>
+                                @foreach (var fl in floors)
+                                {
+                                    var fid = Prop(fl, "floorId", "id");
+                                    var text = floorLabels.GetValueOrDefault(fid) ?? $"Floor #{fid}";
+                                    <option value="@fid" selected="@(currentVal == fid ? "selected" : null)">@text</option>
+                                }
+                            </select>
+                        }
+                        else if (f == "flatId")
+                        {
+                            <select class="form-select" id="f_@f" name="fields[@f]" required>
+                                <option value="">-- Select Flat --</option>
+                                @foreach (var fl in flats)
+                                {
+                                    var flid = Prop(fl, "flatId", "id");
+                                    var text = flatLabels.GetValueOrDefault(flid) ?? $"Flat #{flid}";
+                                    <option value="@flid" selected="@(currentVal == flid ? "selected" : null)">@text</option>
+                                }
+                            </select>
+                        }
+                        else if (f == "residentProfileId")
+                        {
+                            <select class="form-select" id="f_@f" name="fields[@f]" required>
+                                <option value="">-- Select Resident --</option>
+                                @foreach (var r in residents)
+                                {
+                                    var rid = Prop(r, "residentProfileId", "id");
+                                    var rFlatId = Prop(r, "flatId");
+                                    var rName = Prop(r, "fullName");
+                                    var rPhone = Prop(r, "mobileNumber");
+                                    var display = string.IsNullOrEmpty(rPhone) ? rName : $"{rName} ({rPhone})";
+                                    <option value="@rid" data-flat-id="@rFlatId" selected="@(currentVal == rid ? "selected" : null)">@display</option>
+                                }
+                            </select>
+                        }
+                        else if (f == "userId")
+                        {
+                            <select class="form-select" id="f_@f" name="fields[@f]">
+                                <option value="">-- General / All Residents --</option>
+                                @foreach (var r in residents)
+                                {
+                                    var uid = Prop(r, "applicationUserId", "userId");
+                                    if (!string.IsNullOrWhiteSpace(uid))
+                                    {
+                                        var rName = Prop(r, "fullName");
+                                        <option value="@uid" selected="@(currentVal == uid ? "selected" : null)">@rName</option>
+                                    }
+                                }
+                            </select>
+                        }
+                        else if (f is "isOccupied" or "isHome")
+                        {
+                            var isChecked = currentVal.Equals("true", StringComparison.OrdinalIgnoreCase);
+                            <div class="form-check form-switch mt-1">
+                                <input type="hidden" id="h_@f" name="fields[@f]" value="@(isChecked ? "true" : "false")" />
+                                <input class="form-check-input" type="checkbox" role="switch" id="f_@f"
+                                       checked="@(isChecked ? "checked" : null)"
+                                       onchange="document.getElementById('h_@f').value = this.checked ? 'true' : 'false';" />
+                                <label class="form-check-label" for="f_@f">@(f == "isOccupied" ? "Flat is occupied" : "Resident is currently home")</label>
+                            </div>
+                        }
+                        else if (f is "description" or "message")
+                        {
+                            <textarea class="form-control" id="f_@f" name="fields[@f]" rows="3" required>@currentVal</textarea>
+                        }
+                        else if (f.EndsWith("Time", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <input class="form-control" id="f_@f" name="fields[@f]" value="@currentVal" type="time" step="1" required />
+                        }
+                        else if (f is "mobileNumber" or "guestPhone")
+                        {
+                            <input class="form-control" id="f_@f" name="fields[@f]" value="@currentVal" type="tel" required />
+                        }
+                        else if (f == "floorNumber")
+                        {
+                            <input class="form-control" id="f_@f" name="fields[@f]" value="@currentVal" type="number" min="0" required />
+                        }
+                        else
+                        {
+                            <input class="form-control" id="f_@f" name="fields[@f]" value="@currentVal" type="text" required />
+                        }
+                    </div>
+                }
+
+                <div class="sa-form-actions">
+                    <button class="btn btn-primary px-4" type="submit">@(ViewBag.Id == null ? "Create record" : "Save changes")</button>
+                    <a asp-action="Index" asp-route-module="@module" class="btn btn-light">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const flatSelect = document.getElementById('f_flatId');
+        const residentSelect = document.getElementById('f_residentProfileId');
+        if (!flatSelect || !residentSelect) return;
+
+        const allOptions = Array.from(residentSelect.querySelectorAll('option[data-flat-id]'));
+        function filterResidents() {
+            const flatId = flatSelect.value;
+            allOptions.forEach(opt => {
+                const match = !flatId || opt.dataset.flatId === flatId;
+                opt.hidden = !match;
+                opt.disabled = !match;
+            });
+            const selectedOpt = residentSelect.selectedOptions[0];
+            if (selectedOpt && selectedOpt.hidden) {
+                residentSelect.value = '';
+            }
+        }
+        flatSelect.addEventListener('change', filterResidents);
+        filterResidents();
+    })();
+</script>

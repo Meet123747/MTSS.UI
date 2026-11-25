@@ -1,5 +1,47 @@
-@{ Layout = "_SocietyAdminLayout"; ViewData["Title"]="Validate Amenity PIN"; }
-<div class="container py-4" style="max-width:700px"><div class="small text-primary fw-semibold text-uppercase">Amenity access</div><h2 class="fw-bold mt-1">Validate amenity PIN</h2><p class="text-secondary">Validate a resident's access PIN against the backend. The backend decides whether the PIN is valid and usable.</p>
-@if(ViewBag.SuccessMessage!=null){<div class="alert alert-success">@ViewBag.SuccessMessage</div>}
-@if(ViewBag.ErrorMessage!=null){<div class="alert alert-danger">@ViewBag.ErrorMessage</div>}
-<div class="card border-0 shadow-sm"><div class="card-body p-4"><form asp-action="ValidateAmenityPin" method="post">@Html.AntiForgeryToken()<div class="mb-3"><label class="form-label fw-semibold">Amenity ID</label><input type="number" min="1" name="amenityId" class="form-control" required/></div><div class="mb-3"><label class="form-label fw-semibold">PIN</label><input type="text" name="pin" class="form-control" required autocomplete="off"/></div><button class="btn btn-primary">Validate PIN</button></form></div></div></div>
+@using System.Text.Json
+@{
+    Layout = "_SocietyAdminLayout";
+    ViewData["Title"] = "Validate Amenity PIN";
+    var amenities = ViewBag.Amenities as List<JsonElement> ?? new();
+    var selectedId = ViewBag.SelectedAmenityId?.ToString() ?? "";
+    string Prop(JsonElement el, params string[] keys)
+    {
+        if (el.ValueKind != JsonValueKind.Object) return "";
+        foreach (var k in keys)
+            if (el.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null)
+                return v.ToString();
+        return "";
+    }
+}
+<div class="sa-form-shell">
+    <div class="mtss-page-header">
+        <div>
+            <div class="mtss-eyebrow">Amenity Access</div>
+            <h1 class="mtss-page-title">Validate Amenity PIN</h1>
+            <p class="mtss-page-subtitle">Select an amenity and validate a resident's access PIN against the backend.</p>
+        </div>
+    </div>
+    @if (ViewBag.SuccessMessage != null) { <div class="alert alert-success mtss-alert">@ViewBag.SuccessMessage</div> }
+    @if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger mtss-alert">@ViewBag.ErrorMessage</div> }
+    <div class="mtss-card mtss-card-body">
+        <form asp-action="ValidateAmenityPin" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="form-label" for="amenityId">Amenity</label>
+                <select id="amenityId" name="amenityId" class="form-select" required>
+                    <option value="">-- Select Amenity --</option>
+                    @foreach (var a in amenities)
+                    {
+                        var aid = Prop(a, "amenityId", "id");
+                        <option value="@aid" selected="@(selectedId == aid ? "selected" : null)">@Prop(a, "name")</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="form-label" for="pin">PIN</label>
+                <input type="text" id="pin" name="pin" class="form-control" required autocomplete="off" placeholder="Enter 6-digit PIN" />
+            </div>
+            <button class="btn btn-primary" type="submit"><span data-icon="shield" class="mtss-icon-sm"></span> Validate PIN</button>
+        </form>
+    </div>
+</div>

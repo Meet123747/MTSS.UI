@@ -1,13 +1,2 @@
 @{ Layout = "_SocietyAdminLayout"; }
-@{
-    ViewData["Title"] = (ViewBag.Id == null ? "Add " : "Edit ") + ViewBag.Title;
-    var module = (string)ViewBag.Module;
-    var fields = ViewBag.Fields as string[] ?? Array.Empty<string>();
-    var labels = ViewBag.Labels as string[] ?? Array.Empty<string>();
-    var values = ViewBag.Values as Dictionary<string,string> ?? new();
-}
-<div class="container py-4" style="max-width:850px"><a asp-action="Index" asp-route-module="@module" class="text-decoration-none">← Back to @ViewBag.Title</a><div class="mt-3 mb-4"><div class="small text-primary fw-semibold text-uppercase">Society administration</div><h2 class="fw-bold">@(ViewBag.Id == null ? "Add " : "Edit ")@ViewBag.Title</h2><p class="text-secondary mb-0">Enter the details below. The request will be sent to the live MTSS backend.</p></div>
-@if(ViewBag.ErrorMessage != null){<div class="alert alert-danger">@ViewBag.ErrorMessage</div>}
-<div class="card border-0 shadow-sm"><div class="card-body p-4"><form asp-action="@(ViewBag.Id == null ? "Create" : "Edit")" method="post">@Html.AntiForgeryToken()<input type="hidden" name="module" value="@module"/>@if(ViewBag.Id != null){<input type="hidden" name="id" value="@ViewBag.Id"/>}
-@for(int i=0;i<fields.Length;i++){var f=fields[i];var label=i<labels.Length?labels[i]:f;var isBool=f=="isOccupied";var isTime=f.EndsWith("Time",StringComparison.OrdinalIgnoreCase);<div class="mb-3"><label class="form-label fw-semibold" for="f_@f">@label</label>@if(isBool){<select class="form-select" id="f_@f" name="fields[@f]"><option value="false">No</option><option value="true">Yes</option></select>}else{<input class="form-control" id="f_@f" name="fields[@f]" value="@(values.GetValueOrDefault(f))" type="@(f.EndsWith("Id",StringComparison.OrdinalIgnoreCase)||f=="floorNumber"?"number":"text")" placeholder="@(isTime?"HH:mm:ss":"")" required />}</div>}
-<button class="btn btn-primary px-4" type="submit">@(ViewBag.Id == null ? "Create record" : "Save changes")</button> <a asp-action="Index" asp-route-module="@module" class="btn btn-light ms-2">Cancel</a></form></div></div></div>
+@await Html.PartialAsync("~/Views/SocietyAdmin/Shared/_ModuleForm.cshtml")

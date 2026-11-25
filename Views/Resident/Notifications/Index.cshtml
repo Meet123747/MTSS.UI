@@ -3,20 +3,118 @@
     ViewData["Title"] = "Notifications";
     ViewData["PageHeading"] = "Notifications";
     var rows = ViewBag.Rows as List<JsonElement> ?? new();
-    string Val(JsonElement row, string key) => row.ValueKind == JsonValueKind.Object && row.TryGetProperty(key, out var v) ? v.ToString() : "";
+    string Val(JsonElement row, params string[] keys)
+    {
+        if (row.ValueKind != JsonValueKind.Object) return "";
+        foreach (var k in keys)
+            if (row.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null)
+                return v.ToString();
+        return "";
+    }
+    string FormatDate(string raw) => DateTime.TryParse(raw, out var dt) ? dt.ToString("dd MMM yyyy, hh:mm tt") : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
+    var unreadCount = rows.Count(r => !Val(r, "isRead").Equals("true", StringComparison.OrdinalIgnoreCase));
 }
-<div class="page-intro"><div><div class="page-eyebrow">UPDATES</div><h1 class="page-title">Notifications</h1><p class="page-subtitle">Stay informed about your society and resident account.</p></div>
-@if (rows.Count > 0) { <form asp-action="MarkAllNotificationsRead" method="post">@Html.AntiForgeryToken()<button class="btn btn-outline-resident" type="submit">Mark all as read</button></form> }</div>
-@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
-<div class="resident-card">
-@if (rows.Count == 0) { <div class="empty-state"><div class="empty-icon">♧</div><strong>You're all caught up</strong><p>Notifications will appear here when the backend has updates for you.</p></div> }
-else { <div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Title</th><th>Message</th><th>Type</th><th>Read</th><th>Actions</th></tr></thead><tbody>
-@foreach (var row in rows) {
-    var idText=Val(row,"id"); var title=Val(row,"title"); var message=Val(row,"message"); var type=Val(row,"type"); var isRead=Val(row,"isRead");
-    <tr><td><strong>@(string.IsNullOrWhiteSpace(title) ? "Notification" : title)</strong></td><td>@message</td><td>@(string.IsNullOrWhiteSpace(type) ? "—" : type)</td><td><span class="status-pill @(isRead.Equals("true",StringComparison.OrdinalIgnoreCase) ? "success" : "warning")">@(isRead.Equals("true",StringComparison.OrdinalIgnoreCase) ? "Read" : "Unread")</span></td><td class="d-flex gap-2 align-items-center">
-    @if (int.TryParse(idText,out var id)) { <a class="action-link" asp-action="NotificationDetails" asp-route-id="@id">Open</a>
-        @if (!isRead.Equals("true",StringComparison.OrdinalIgnoreCase)) { <form asp-action="MarkNotificationRead" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@id"/><button class="action-link border-0 bg-transparent" type="submit">Mark read</button></form> }
-    } else { <span class="text-secondary">—</span> }</td></tr>
-}
-</tbody></table></div> }
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">UPDATES</div>
+        <h1 class="page-title">Notifications</h1>
+        <p class="page-subtitle">Stay informed about your society and resident account (@unreadCount unread).</p>
+    </div>
+    @if (unreadCount > 0)
+    {
+        <form asp-action="MarkAllNotificationsRead" method="post">
+            @Html.AntiForgeryToken()
+            <button class="btn btn-outline-resident" type="submit">Mark all as read</button>
+        </form>
+    }
 </div>
+
+@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+
+<div class="resident-card">
+    @if (rows.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-icon"><span data-icon="bell"></span></div>
+            <strong>You're all caught up</strong>
+            <p>Notifications will appear here when the backend has updates for you.</p>
+        </div>
+    }
+    else
+    {
+        <div class="resident-toolbar">
+            <div><h2 class="section-heading">All Notifications <span class="badge text-bg-light ms-1">@rows.Count</span></h2></div>
+            <div class="resident-toolbar-controls">
+                <select id="notifReadFilter" class="form-select" style="width:auto">
+                    <option value="">All</option>
+                    <option value="unread">Unread (@unreadCount)</option>
+                    <option value="read">Read</option>
+                </select>
+                <input id="notifSearch" class="form-control" style="width:220px" placeholder="Search notifications..." />
+            </div>
+        </div>
+        <div class="resident-table-wrap">
+            <table class="resident-table resident-table-cards">
+                <thead><tr><th>Title &amp; Message</th><th>Type</th><th>Received</th><th>State</th><th>Actions</th></tr></thead>
+                <tbody id="notifRows">
+                    @foreach (var row in rows)
+                    {
+                        var idText = Val(row, "id", "notificationId");
+                        var title = Val(row, "title");
+                        var message = Val(row, "message");
+                        var type = Val(row, "type");
+                        var created = Val(row, "createdAt");
+                        var isRead = Val(row, "isRead").Equals("true", StringComparison.OrdinalIgnoreCase);
+                        <tr data-read="@(isRead ? "read" : "unread")">
+                            <td data-label="Notification">
+                                <strong>@(string.IsNullOrWhiteSpace(title) ? "Notification" : title)</strong>
+                                @if (!string.IsNullOrWhiteSpace(message)) { <div class="text-secondary mt-1">@message</div> }
+                            </td>
+                            <td data-label="Type">@(string.IsNullOrWhiteSpace(type) ? "—" : type)</td>
+                            <td data-label="Received">@FormatDate(created)</td>
+                            <td data-label="State"><span class="status-pill @(isRead ? "success" : "warning")">@(isRead ? "Read" : "Unread")</span></td>
+                            <td data-label="Actions" class="d-flex gap-2 align-items-center">
+                                @if (int.TryParse(idText, out var id))
+                                {
+                                    <a class="action-link" asp-action="NotificationDetails" asp-route-id="@id">Open</a>
+                                    @if (!isRead)
+                                    {
+                                        <form asp-action="MarkNotificationRead" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@id" />
+                                            <button class="action-link border-0 bg-transparent p-0" type="submit">Mark read</button>
+                                        </form>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-secondary">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const search = document.getElementById('notifSearch');
+            const filter = document.getElementById('notifReadFilter');
+            function apply() {
+                const q = (search?.value || '').toLowerCase();
+                const rf = (filter?.value || '').toLowerCase();
+                document.querySelectorAll('#notifRows tr').forEach(r => {
+                    const matchQ = !q || r.innerText.toLowerCase().includes(q);
+                    const matchR = !rf || r.dataset.read === rf;
+                    r.hidden = !(matchQ && matchR);
+                });
+            }
+            search?.addEventListener('input', apply);
+            filter?.addEventListener('change', apply);
+        })();
+    </script>
+}

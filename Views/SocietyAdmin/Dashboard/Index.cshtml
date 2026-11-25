@@ -1,6 +1,69 @@
 @using System.Text.Json
-@{ Layout = "_SocietyAdminLayout"; ViewData["Title"]="Dashboard"; var data = ViewBag.DashboardData is JsonElement j ? j : default; }
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4"><div><div class="small text-primary fw-semibold text-uppercase">Overview</div><h2 class="fw-bold mb-1">Welcome, @ViewBag.FullName</h2><p class="text-secondary mb-0">Your society's latest backend dashboard summary.</p></div><span class="badge text-bg-success rounded-pill px-3 py-2">Live dashboard</span></div>
-@if(ViewBag.ErrorMessage!=null){<div class="alert alert-warning">@ViewBag.ErrorMessage</div>}
-@if(data.ValueKind==JsonValueKind.Object){<div class="row g-3 mb-4">@foreach(var p in data.EnumerateObject()){<div class="col-sm-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">@System.Text.RegularExpressions.Regex.Replace(p.Name,"([a-z])([A-Z])","$1 $2")</div><div class="h3 fw-bold mt-2 mb-0">@p.Value.ToString()</div></div></div></div>}</div>}else{<div class="alert alert-light border">The backend did not return dashboard summary fields.</div>}
-<div class="card border-0 shadow-sm"><div class="card-body p-4"><h5 class="fw-bold">Quick actions</h5><p class="text-secondary">Jump directly to the management area you need.</p><div class="d-flex flex-wrap gap-2">@foreach(var item in new[]{("Wings","wings"),("Floors","floors"),("Flats","flats"),("Residents","residents"),("Amenities","amenities"),("Guest entries","guests"),("Parcels","parcels"),("Complaints","complaints"),("Notifications","notifications")}){<a asp-action="Index" asp-route-module="@item.Item2" class="btn btn-outline-primary">@item.Item1</a>}</div></div></div>
+@{
+    Layout = "_SocietyAdminLayout";
+    ViewData["Title"] = "Dashboard";
+    var data = ViewBag.DashboardData is JsonElement j ? j : default;
+    var quickModules = new[]
+    {
+        ("Wings", "wings", "building"),
+        ("Floors", "floors", "layers"),
+        ("Flats", "flats", "grid"),
+        ("Residents", "residents", "users"),
+        ("Amenities", "amenities", "sparkles"),
+        ("Guest entries", "guests", "user"),
+        ("Parcels", "parcels", "package"),
+        ("Complaints", "complaints", "message"),
+        ("Notifications", "notifications", "bell")
+    };
+}
+
+<div class="mtss-page-header">
+    <div>
+        <div class="mtss-eyebrow">Society Overview</div>
+        <h1 class="mtss-page-title">Welcome, @ViewBag.FullName</h1>
+        <p class="mtss-page-subtitle">Your society's live operational metrics and management modules.</p>
+    </div>
+    <span class="mtss-badge mtss-badge-success">Live workspace</span>
+</div>
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-warning mtss-alert">@ViewBag.ErrorMessage</div>
+}
+
+@if (data.ValueKind == JsonValueKind.Object)
+{
+    <div class="mtss-stat-grid">
+        @foreach (var p in data.EnumerateObject())
+        {
+            <div class="mtss-stat-card">
+                <div class="mtss-stat-icon"><span data-icon="chart"></span></div>
+                <div>
+                    <div class="mtss-stat-label">@System.Text.RegularExpressions.Regex.Replace(p.Name, "([a-z])([A-Z])", "$1 $2")</div>
+                    <div class="mtss-stat-value">@p.Value.ToString()</div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-light border mtss-alert">The backend did not return dashboard summary fields.</div>
+}
+
+<div class="mtss-card mtss-card-body">
+    <div class="mb-3">
+        <h2 class="h5 fw-bold mb-1">Quick Actions</h2>
+        <p class="text-secondary small mb-0">Jump directly to the management module you need.</p>
+    </div>
+    <div class="sa-quick-grid">
+        @foreach (var item in quickModules)
+        {
+            <a asp-action="Index" asp-route-module="@item.Item2" class="sa-quick-link">
+                <span class="sa-quick-icon"><span data-icon="@item.Item3"></span></span>
+                <span class="sa-quick-label">@item.Item1</span>
+                <span data-icon="arrowRight" class="sa-quick-arrow"></span>
+            </a>
+        }
+    </div>
+</div>

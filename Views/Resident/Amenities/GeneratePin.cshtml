@@ -1,14 +1,70 @@
 @{
     ViewData["Title"] = "Generate Amenity PIN";
     ViewData["PageHeading"] = "Generate amenity PIN";
+    var knownAmenities = ViewBag.KnownAmenities as List<(string Id, string Name)> ?? new();
+    var selectedId = ViewBag.AmenityId?.ToString() ?? "";
 }
-<div class="page-intro"><div><div class="page-eyebrow">COMMUNITY AMENITIES</div><h1 class="page-title">Generate a PIN</h1><p class="page-subtitle">Enter the amenity ID supplied by your society.</p></div><a class="btn btn-outline-resident" asp-action="Amenities">← Back to PINs</a></div>
+
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">COMMUNITY AMENITIES</div>
+        <h1 class="page-title">Generate Amenity PIN</h1>
+        <p class="page-subtitle">Generate a 6-digit access PIN valid for 15 minutes (single use, verified at amenity entry).</p>
+    </div>
+    <a class="btn btn-outline-resident" asp-action="Amenities">← Back to My Amenity PINs</a>
+</div>
+
 <div class="resident-card resident-card-body resident-form-card">
-    @if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
-    <div class="alert alert-info resident-alert">The documented Resident API accepts an <strong>amenityId</strong>. An amenity-list endpoint for Resident accounts is not included in the supplied API manual, so this form asks for the ID rather than displaying invented amenity options.</div>
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div>
+    }
+
+    <div class="alert alert-info resident-alert">
+        <strong>Society amenity directory unavailable:</strong> The current backend only exposes <code>POST /api/resident/amenity-pins</code> (which requires an <code>amenityId</code>) and does not expose a resident-scoped endpoint to list all active society amenities. Enter the Amenity ID provided by your Society Admin@(knownAmenities.Count > 0 ? ", or pick one from your previous PINs below" : "").
+    </div>
+
     <form asp-action="GeneratePin" method="post">
         @Html.AntiForgeryToken()
-        <div class="mb-4"><label class="form-label" for="amenityId">Amenity ID</label><input class="form-control" id="amenityId" name="amenityId" type="number" min="1" required value="@ViewBag.AmenityId" placeholder="Enter amenity ID" /></div>
-        <button class="btn btn-resident" type="submit">Generate PIN</button><a class="btn btn-outline-resident ms-2" asp-action="Amenities">Cancel</a>
+
+        @if (knownAmenities.Count > 0)
+        {
+            <div class="mb-3">
+                <label class="form-label" for="knownAmenityPicker">Quick-fill from your previous PINs</label>
+                <select class="form-select" id="knownAmenityPicker">
+                    <option value="">-- Optional: select a previously used amenity --</option>
+                    @foreach (var item in knownAmenities)
+                    {
+                        <option value="@item.Id" selected="@(selectedId == item.Id ? "selected" : null)">
+                            @item.Name (ID: @item.Id)
+                        </option>
+                    }
+                </select>
+            </div>
+        }
+
+        <div class="mb-4">
+            <label class="form-label" for="amenityId">Amenity ID</label>
+            <input class="form-control" id="amenityId" name="amenityId" type="number" min="1" required value="@ViewBag.AmenityId" placeholder="Enter Amenity ID (e.g. 1)" />
+        </div>
+
+        <button class="btn btn-resident" type="submit">Generate PIN</button>
+        <a class="btn btn-outline-resident ms-2" asp-action="Amenities">Cancel</a>
     </form>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const picker = document.getElementById('knownAmenityPicker');
+            const input = document.getElementById('amenityId');
+            if (!picker || !input) return;
+
+            picker.addEventListener('change', function () {
+                if (picker.value) {
+                    input.value = picker.value;
+                }
+            });
+        })();
+    </script>
+}

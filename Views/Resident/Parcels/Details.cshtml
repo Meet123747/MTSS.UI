@@ -1,0 +1,101 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Parcel Details";
+    ViewData["PageHeading"] = "Parcel details";
+    var record = ViewBag.Record as JsonElement?;
+
+    string Val(string key) =>
+        record.HasValue && record.Value.ValueKind == JsonValueKind.Object &&
+        record.Value.TryGetProperty(key, out var p) && p.ValueKind != JsonValueKind.Null
+            ? p.ToString()
+            : "";
+
+    string FormatDate(string raw) => DateTime.TryParse(raw, out var dt) ? dt.ToString("dd MMM yyyy, hh:mm tt") : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
+
+    var parcelId = Val("parcelId");
+    if (string.IsNullOrWhiteSpace(parcelId)) parcelId = Val("id");
+    var courier = Val("courierName");
+    var tracking = Val("trackingNumber");
+    var receivedAt = Val("receivedAt");
+    var collectedAt = Val("collectedAt");
+    var status = Val("status");
+    var isCollected = status.Equals("Collected", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">RESIDENT SERVICES</div>
+        <h1 class="page-title">Parcel Details</h1>
+        <p class="page-subtitle">Read-only parcel information and collection status.</p>
+    </div>
+    <a class="btn btn-outline-resident" asp-action="Parcels">← Back to My Parcels</a>
+</div>
+
+@if (record.HasValue && record.Value.ValueKind == JsonValueKind.Object)
+{
+    <div class="resident-card resident-card-body mb-4">
+        <div class="mb-3">
+            <h2 class="section-heading">Status Timeline</h2>
+            <div class="section-note">Parcel progress from society reception to resident collection</div>
+        </div>
+        <div class="detail-grid">
+            <div class="detail-item">
+                <small>Step 1 · Parcel Received</small>
+                <strong class="text-success">Completed — @FormatDate(receivedAt)</strong>
+            </div>
+            <div class="detail-item">
+                <small>Step 2 · Parcel Collected</small>
+                @if (isCollected)
+                {
+                    <strong class="text-success">Completed — @FormatDate(collectedAt)</strong>
+                }
+                else
+                {
+                    <strong class="text-warning">Pending collection</strong>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="resident-card resident-card-body">
+        <div class="mb-3">
+            <h2 class="section-heading">Parcel Information</h2>
+        </div>
+        <div class="detail-grid">
+            <div class="detail-item">
+                <small>Parcel ID</small>
+                <strong>#@(string.IsNullOrWhiteSpace(parcelId) ? "—" : parcelId)</strong>
+            </div>
+            <div class="detail-item">
+                <small>Current Status</small>
+                <div>
+                    <span class="status-pill @(isCollected ? "success" : "warning")">
+                        @(string.IsNullOrWhiteSpace(status) ? "Received" : status)
+                    </span>
+                </div>
+            </div>
+            <div class="detail-item">
+                <small>Courier Name</small>
+                <strong>@(string.IsNullOrWhiteSpace(courier) ? "—" : courier)</strong>
+            </div>
+            <div class="detail-item">
+                <small>Tracking Number</small>
+                <strong>@(string.IsNullOrWhiteSpace(tracking) ? "—" : tracking)</strong>
+            </div>
+            <div class="detail-item">
+                <small>Received At</small>
+                <strong>@FormatDate(receivedAt)</strong>
+            </div>
+            <div class="detail-item">
+                <small>Collected At</small>
+                <strong>@FormatDate(collectedAt)</strong>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="resident-card resident-card-body">
+        <div class="empty-state"><strong>No parcel details returned</strong></div>
+    </div>
+}

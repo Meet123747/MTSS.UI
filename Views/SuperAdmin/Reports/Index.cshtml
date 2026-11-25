@@ -3,7 +3,7 @@
 @using MTSS.UI.Models.ApiModels.SubscriptionPlans
 @{
     ViewData["Title"] = "Reports";
-    Layout = null;
+    Layout = "_SuperAdminLayout";
 
     var societies = ViewBag.Societies as List<SocietyListItem>
         ?? new List<SocietyListItem>();
@@ -14,205 +14,8 @@
     var recentSocieties = ViewBag.RecentSocieties as List<SocietyListItem>
         ?? societies.OrderByDescending(s => s.CreatedAt).Take(10).ToList();
 }
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MTSS | Reports</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <style>
-        body {
-            margin: 0;
-            background: #f4f6fa;
-            font-family: Arial, sans-serif;
-        }
 
-        .sidebar {
-            width: 250px;
-            min-height: 100vh;
-            background: #17243a;
-            color: white;
-            position: fixed;
-            padding: 25px 18px;
-            display: flex;
-            flex-direction: column;
-        }
 
-        .brand {
-            font-size: 25px;
-            font-weight: bold;
-            margin-bottom: 40px;
-        }
-
-        .nav-link {
-            color: #cbd5e1;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            border-radius: 7px;
-            text-decoration: none;
-        }
-
-            .nav-link.active, .nav-link:hover {
-                background: #2563eb;
-                color: white;
-            }
-
-        .logout-link {
-            color: #fca5a5;
-            cursor: pointer;
-        }
-
-            .logout-link:hover {
-                background: #dc2626;
-                color: white;
-            }
-
-        .sidebar-bottom {
-            margin-top: auto;
-        }
-
-        .main-content {
-            margin-left: 250px;
-            padding: 30px;
-        }
-
-        .content-card, .stat-card {
-            background: white;
-            border: 0;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 3px 15px rgba(0,0,0,.04);
-        }
-
-        .stat-card {
-            height: 100%;
-            padding: 20px;
-        }
-
-        .stat-label {
-            color: #64748b;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-
-        .stat-value {
-            color: #17243a;
-            font-size: 28px;
-            font-weight: 700;
-        }
-
-        .table th {
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-
-        .table td, .table th {
-            padding: 14px;
-            vertical-align: middle;
-        }
-
-        .status {
-            padding: 6px 11px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .active-status {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .inactive-status {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        .section-title {
-            font-weight: 600;
-            color: #17243a;
-        }
-
-        @@media(max-width:768px) {
-            .sidebar {
-                width: 100%;
-                min-height: auto;
-                position: relative;
-            }
-
-            .sidebar-bottom {
-                margin-top: 15px;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 18px;
-            }
-        }
-    
-        .sidebar-bottom {
-            margin-top: auto;
-            padding-top: 16px;
-        }
-
-        .logout-link {
-            display: block;
-            width: 100%;
-            text-align: left;
-            color: #fca5a5;
-            background: transparent;
-            border: 0;
-            border-radius: 7px;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            font: inherit;
-            text-decoration: none;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        .logout-link:hover,
-        .logout-link:focus {
-            background: #dc2626;
-            color: #ffffff;
-        }
-
-    </style>
-</head>
-<body>
-
-    <aside class="sidebar">
-        <div class="brand">MTSS</div>
-        <p class="text-uppercase text-secondary small">Main Menu</p>
-
-        <nav class="nav flex-column">
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Index">Dashboard</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Societies">Societies</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="SubscriptionPlans">Subscription Plans</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="SocietySubscriptions">Society Subscriptions</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Payments">Payments</a>
-            <a class="nav-link active" asp-controller="SuperAdmin" asp-action="Reports">Reports</a>
-            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Settings">Settings</a>
-        </nav>
-
-        <div class="sidebar-bottom">
-        </div>
-    
-        <div class="sidebar-bottom">
-            <form asp-controller="Auth" asp-action="Logout" method="post">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="logout-link">
-                    Logout
-                </button>
-            </form>
-        </div>
-
-    </aside>
-
-    <main class="main-content">
 
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
             <div>
@@ -293,7 +96,7 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-hover" id="societyReport">
+                <table class="table table-hover sup-data-table" id="societyReport">
                     <thead>
                         <tr>
                             <th>Society ID</th>
@@ -310,12 +113,12 @@
                             foreach (var society in recentSocieties)
                             {
                         <tr>
-                            <td>#@society.SocietyId</td>
-                            <td>@society.Name</td>
-                            <td>@society.City</td>
-                            <td>@society.State</td>
-                            <td>@society.CreatedAt.ToString("dd MMM yyyy")</td>
-                            <td>
+                            <td data-label="Society ID">#@society.SocietyId</td>
+                            <td data-label="Society name">@society.Name</td>
+                            <td data-label="City">@society.City</td>
+                            <td data-label="State">@society.State</td>
+                            <td data-label="Registration date">@society.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td data-label="Status">
                                 @if (society.IsActive)
                                         {
                                 <span class="status active-status">Active</span>
@@ -348,7 +151,7 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-hover" id="planReport">
+                <table class="table table-hover sup-data-table" id="planReport">
                     <thead>
                         <tr>
                             <th>Plan ID</th>
@@ -366,13 +169,13 @@
                             foreach (var plan in plans)
                             {
                         <tr>
-                            <td>#@plan.SubscriptionPlanId</td>
-                            <td>@plan.Name</td>
-                            <td>@plan.MaxWings</td>
-                            <td>@plan.MaxFloorsPerWing</td>
-                            <td>@plan.MaxFlats</td>
-                            <td>@plan.MaxAmenities</td>
-                            <td>
+                            <td data-label="Plan ID">#@plan.SubscriptionPlanId</td>
+                            <td data-label="Plan name">@plan.Name</td>
+                            <td data-label="Max wings">@plan.MaxWings</td>
+                            <td data-label="Max floors per wing">@plan.MaxFloorsPerWing</td>
+                            <td data-label="Max flats">@plan.MaxFlats</td>
+                            <td data-label="Max amenities">@plan.MaxAmenities</td>
+                            <td data-label="Status">
                                 @if (plan.IsActive)
                                         {
                                 <span class="status active-status">Active</span>
@@ -398,9 +201,8 @@
             </div>
         </div>
 
-    </main>
-
-    <script>
+@section Scripts {
+<script>
         function tableToCsv(tableId) {
             const table = document.getElementById(tableId);
             if (!table) return [];
@@ -440,6 +242,4 @@
             URL.revokeObjectURL(url);
         }
     </script>
-
-</body>
-</html>
+}

@@ -1,16 +1,42 @@
 @using System.Text.Json
+@using System.Text.RegularExpressions
 @{
     ViewData["Title"] = "Notification Details";
     ViewData["PageHeading"] = "Notification details";
     var record = ViewBag.Record as JsonElement?;
-}
-<div class="page-intro"><div><div class="page-eyebrow">UPDATES</div><h1 class="page-title">Notification details</h1><p class="page-subtitle">Information returned by the resident notifications API.</p></div><a class="btn btn-outline-resident" asp-action="Notifications">← Back</a></div>
-<div class="resident-card resident-card-body">
-@if (record.HasValue && record.Value.ValueKind == JsonValueKind.Object) {
-    <div class="detail-grid">
-    @foreach (var property in record.Value.EnumerateObject()) {
-        <div class="detail-item"><small>@property.Name</small><strong>@(property.Value.ValueKind == JsonValueKind.Null ? "—" : property.Value.ToString())</strong></div>
+    string FormatLabel(string key) => Regex.Replace(key, "([a-z])([A-Z])", "$1 $2");
+    string FormatVal(string key, JsonElement val)
+    {
+        if (val.ValueKind == JsonValueKind.Null) return "—";
+        var s = val.ToString();
+        if (key.EndsWith("At", StringComparison.OrdinalIgnoreCase) && DateTime.TryParse(s, out var dt))
+            return dt.ToString("dd MMM yyyy, hh:mm tt");
+        return string.IsNullOrWhiteSpace(s) ? "—" : s;
     }
+}
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">UPDATES</div>
+        <h1 class="page-title">Notification details</h1>
+        <p class="page-subtitle">Information returned by the resident notifications API.</p>
     </div>
-} else { <div class="empty-state"><strong>No detail data returned</strong></div> }
+    <a class="btn btn-outline-resident" asp-action="Notifications">← Back</a>
+</div>
+<div class="resident-card resident-card-body">
+    @if (record.HasValue && record.Value.ValueKind == JsonValueKind.Object)
+    {
+        <div class="detail-grid">
+            @foreach (var property in record.Value.EnumerateObject())
+            {
+                <div class="detail-item">
+                    <small class="text-capitalize">@FormatLabel(property.Name)</small>
+                    <strong>@FormatVal(property.Name, property.Value)</strong>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-state"><strong>No detail data returned</strong></div>
+    }
 </div>

@@ -1,0 +1,89 @@
+@using Microsoft.AspNetCore.Http
+@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string NavClass(params string[] actions) =>
+        actions.Any(a => currentAction.StartsWith(a, StringComparison.OrdinalIgnoreCase))
+            ? "sup-nav active"
+            : "sup-nav";
+    var fullName = Context.Session.GetString("FullName") ?? "Super Admin";
+    var initial = string.IsNullOrWhiteSpace(fullName) ? "A" : fullName.Trim()[0].ToString().ToUpperInvariant();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MTSS Super Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mtss-design-system.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/super-admin.css" asp-append-version="true" />
+</head>
+<body>
+<div class="sup-shell bg-slate-50 text-slate-900">
+    <aside class="sup-sidebar" id="superSidebar">
+        <a class="sup-brand" asp-controller="SuperAdmin" asp-action="Index">
+            <span class="sup-mark">M</span>
+            <span>MTSS<small>CONTROL CENTRE</small></span>
+        </a>
+
+        <div class="sup-section">MAIN MENU</div>
+        <a class="@NavClass("Index")" asp-controller="SuperAdmin" asp-action="Index">
+            <span data-icon="home"></span> Dashboard
+        </a>
+        <a class="@NavClass("Societies", "CreateSociety", "EditSociety", "SocietyDetails")" asp-controller="SuperAdmin" asp-action="Societies">
+            <span data-icon="building"></span> Societies
+        </a>
+        <a class="@NavClass("SubscriptionPlans", "CreateSubscriptionPlan", "EditSubscriptionPlan", "SubscriptionPlanDetails")" asp-controller="SuperAdmin" asp-action="SubscriptionPlans">
+            <span data-icon="layers"></span> Subscription Plans
+        </a>
+        <a class="@NavClass("SocietySubscriptions", "AssignSocietySubscription", "EditSocietySubscription", "SocietySubscriptionDetails")" asp-controller="SuperAdmin" asp-action="SocietySubscriptions">
+            <span data-icon="sparkles"></span> Society Subscriptions
+        </a>
+        <a class="@NavClass("Payments")" asp-controller="SuperAdmin" asp-action="Payments">
+            <span data-icon="creditCard"></span> Payments
+        </a>
+        <a class="@NavClass("Reports")" asp-controller="SuperAdmin" asp-action="Reports">
+            <span data-icon="chart"></span> Reports
+        </a>
+        <a class="@NavClass("Settings")" asp-controller="SuperAdmin" asp-action="Settings">
+            <span data-icon="settings"></span> Settings
+        </a>
+
+        <div class="sup-spacer"></div>
+        <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="sup-logout">
+                <span data-icon="logout"></span> Sign Out
+            </button>
+        </form>
+    </aside>
+
+    <main class="sup-main">
+        <header class="sup-topbar">
+            <button class="sup-mobile-btn" type="button" data-drawer-toggle="superSidebar" data-drawer-overlay="superOverlay" aria-label="Toggle navigation" aria-expanded="false">
+                <span data-icon="menu"></span>
+            </button>
+            <div class="sup-topbar-title">
+                <strong>@(ViewData["Title"] ?? "Super Admin")</strong>
+                <span>MTSS Enterprise Control Centre</span>
+            </div>
+            <div class="sup-user">
+                <span class="sup-avatar">@initial</span>
+                <span class="sup-username">@fullName</span>
+            </div>
+        </header>
+
+        <div class="sup-content mtss-animate-in mx-auto w-full">
+            @RenderBody()
+        </div>
+    </main>
+</div>
+
+<div class="sup-overlay" id="superOverlay"></div>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/mtss-lucide.js" asp-append-version="true"></script>
+<script src="~/js/mtss-ui.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

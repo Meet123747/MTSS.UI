@@ -1,60 +1,133 @@
 @using Microsoft.AspNetCore.Http
+@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string NavClass(params string[] actions) =>
+        actions.Any(a => a.Equals(currentAction, StringComparison.OrdinalIgnoreCase))
+            ? "resident-nav active"
+            : "resident-nav";
+    string BottomNavClass(params string[] actions) =>
+        actions.Any(a => a.Equals(currentAction, StringComparison.OrdinalIgnoreCase))
+            ? "resident-bottom-item active"
+            : "resident-bottom-item";
+    var fullName = Context.Session.GetString("FullName") ?? "Resident";
+    var email = Context.Session.GetString("Email") ?? "Resident account";
+    var initial = string.IsNullOrWhiteSpace(fullName) ? "R" : fullName.Trim()[0].ToString().ToUpperInvariant();
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f5f7fb" />
     <title>@ViewData["Title"] - MTSS Resident</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mtss-design-system.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/resident.css" asp-append-version="true" />
 </head>
 <body>
-<div class="resident-shell">
+<div class="resident-shell bg-slate-50 text-slate-900">
     <aside class="resident-sidebar" id="residentSidebar">
         <a class="resident-brand" asp-controller="Resident" asp-action="Dashboard">
             <span class="brand-symbol">M</span>
             <span>MTSS<small>RESIDENT PORTAL</small></span>
         </a>
+
         <div class="sidebar-caption">WORKSPACE</div>
-        <a class="resident-nav" asp-controller="Resident" asp-action="Dashboard"><span>⌂</span> Overview</a>
+        <a class="@NavClass("Dashboard", "Index")" asp-controller="Resident" asp-action="Dashboard">
+            <span data-icon="home"></span> Overview
+        </a>
+
         <div class="sidebar-caption">MY SERVICES</div>
-        <a class="resident-nav" asp-controller="Resident" asp-action="Complaints"><span>▤</span> My complaints</a>
-        <a class="resident-nav" asp-controller="Resident" asp-action="Notifications"><span>♧</span> Notifications</a>
-        <a class="resident-nav" asp-controller="Resident" asp-action="Amenities"><span>⌁</span> Amenity PINs</a>
+        <a class="@NavClass("Complaints", "CreateComplaint", "ComplaintDetails")" asp-controller="Resident" asp-action="Complaints">
+            <span data-icon="message"></span> My Complaints
+        </a>
+        <a class="@NavClass("Amenities", "GeneratePin", "PinDetails")" asp-controller="Resident" asp-action="Amenities">
+            <span data-icon="key"></span> Amenity PINs
+        </a>
+        <a class="@NavClass("Notifications", "NotificationDetails")" asp-controller="Resident" asp-action="Notifications">
+            <span data-icon="bell"></span> Notifications
+        </a>
+        <a class="@NavClass("Guests")" asp-controller="Resident" asp-action="Guests">
+            <span data-icon="users"></span> Guest Management
+        </a>
+        <a class="@NavClass("Parcels", "ParcelDetails")" asp-controller="Resident" asp-action="Parcels">
+            <span data-icon="package"></span> My Parcels
+        </a>
+
+        <div class="sidebar-caption">ACCOUNT</div>
+        <a class="@NavClass("Profile")" asp-controller="Resident" asp-action="Profile">
+            <span data-icon="user"></span> My Profile
+        </a>
+
         <div class="resident-sidebar-spacer"></div>
         <div class="resident-profile">
-            <div class="profile-avatar">@(Context.Session.GetString("FullName")?.FirstOrDefault().ToString().ToUpperInvariant() ?? "R")</div>
-            <div class="profile-meta"><strong>@(Context.Session.GetString("FullName") ?? "Resident")</strong><small>Resident account</small></div>
+            <div class="profile-avatar">@initial</div>
+            <div class="profile-meta">
+                <strong>@fullName</strong>
+                <small>@email</small>
+            </div>
         </div>
         <form asp-controller="Auth" asp-action="Logout" method="post" class="resident-logout-form">
             @Html.AntiForgeryToken()
-            <button type="submit" class="resident-logout"><span>↪</span> Sign out</button>
+            <button type="submit" class="resident-logout">
+                <span data-icon="logout"></span> Sign Out
+            </button>
         </form>
     </aside>
 
     <div class="resident-main">
         <header class="resident-topbar">
-            <button class="mobile-menu-button" type="button" id="residentMenuButton" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+            <button class="mobile-menu-button" type="button" id="residentMenuButton" data-drawer-toggle="residentSidebar" data-drawer-overlay="residentOverlay" aria-label="Toggle navigation" aria-expanded="false">
+                <span data-icon="menu"></span>
+            </button>
             <div class="topbar-heading">
-                <strong>@ViewData["PageHeading"]</strong>
+                <strong>@(ViewData["PageHeading"] ?? ViewData["Title"] ?? "Resident")</strong>
                 <span>Your community, at a glance</span>
             </div>
             <div class="topbar-right">
-                <span class="secure-pill"><i></i> Secure resident access</span>
-                <div class="topbar-avatar">@(Context.Session.GetString("FullName")?.FirstOrDefault().ToString().ToUpperInvariant() ?? "R")</div>
+                <span class="secure-pill"><span data-icon="shield" class="mtss-icon-sm"></span> Secure access</span>
+                <a class="topbar-avatar text-decoration-none" asp-controller="Resident" asp-action="Profile" title="My Profile">@initial</a>
             </div>
         </header>
-        <main class="resident-content">
+
+        <main class="resident-content mtss-animate-in mx-auto w-full">
             @if (TempData["Success"] != null) { <div class="alert alert-success resident-alert">@TempData["Success"]</div> }
             @if (TempData["Error"] != null) { <div class="alert alert-danger resident-alert">@TempData["Error"]</div> }
             @RenderBody()
         </main>
+
         <footer class="resident-footer">© @DateTime.Now.Year MTSS · Resident Portal</footer>
     </div>
 </div>
+
+<nav class="resident-bottom-nav" aria-label="Mobile Navigation">
+    <a class="@BottomNavClass("Dashboard", "Index")" asp-controller="Resident" asp-action="Dashboard">
+        <span data-icon="home"></span>
+        <span>Home</span>
+    </a>
+    <a class="@BottomNavClass("Complaints", "CreateComplaint", "ComplaintDetails")" asp-controller="Resident" asp-action="Complaints">
+        <span data-icon="message"></span>
+        <span>Issues</span>
+    </a>
+    <a class="@BottomNavClass("Amenities", "GeneratePin", "PinDetails")" asp-controller="Resident" asp-action="Amenities">
+        <span data-icon="key"></span>
+        <span>PINs</span>
+    </a>
+    <a class="@BottomNavClass("Notifications", "NotificationDetails")" asp-controller="Resident" asp-action="Notifications">
+        <span data-icon="bell"></span>
+        <span>Alerts</span>
+    </a>
+    <a class="@BottomNavClass("Parcels", "ParcelDetails")" asp-controller="Resident" asp-action="Parcels">
+        <span data-icon="package"></span>
+        <span>Parcels</span>
+    </a>
+</nav>
+
 <div class="resident-overlay" id="residentOverlay"></div>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/mtss-lucide.js" asp-append-version="true"></script>
+<script src="~/js/mtss-ui.js" asp-append-version="true"></script>
 <script src="~/js/resident.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -1,0 +1,15 @@
+{
+  "name": "mtss-ui-assets",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:css && npm run build:icons",
+    "build:css": "tailwindcss -i ./Styles/tailwind.css -o ./wwwroot/css/tailwind.css --minify",
+    "build:icons": "esbuild ./Scripts/lucide-entry.js --bundle --format=iife --platform=browser --outfile=./wwwroot/js/mtss-lucide.js --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.5",
+    "esbuild": "0.28.2",
+    "lucide": "1.80.0",
+    "tailwindcss": "4.3.5"
+  }
+}

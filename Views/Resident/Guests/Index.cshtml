@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Guest Management";
+    ViewData["PageHeading"] = "Guest management";
+}
+
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">RESIDENT SERVICES</div>
+        <h1 class="page-title">Guest Management</h1>
+        <p class="page-subtitle">View and manage guest entry requests for your residence.</p>
+    </div>
+    <a class="btn btn-outline-resident" asp-action="Dashboard">← Back to Overview</a>
+</div>
+
+<div class="resident-card resident-card-body">
+    <div class="empty-state">
+        <div class="empty-icon"><span data-icon="users"></span></div>
+        <strong>Resident Guest Entry API is not yet exposed by the backend</strong>
+        <p class="mx-auto" style="max-width:560px">
+            The current MTSS backend only exposes guest entry endpoints under <code>/api/societyadmin/guest-entries</code> (restricted to the <strong>SocietyAdmin</strong> role).
+            Once a resident-scoped endpoint (such as <code>/api/resident/guest-entries</code>) is added to the backend, your guest entries and approvals will appear here automatically.
+        </p>
+    </div>
+</div>

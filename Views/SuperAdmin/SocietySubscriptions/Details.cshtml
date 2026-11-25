@@ -3,7 +3,7 @@
 
 @{
     ViewData["Title"] = "Society Subscription Details";
-    Layout = null;
+    Layout = "_SuperAdminLayout";
 
    JsonElement? subscription = ViewBag.SubscriptionData is JsonElement data
     ? data
@@ -31,175 +31,11 @@
                           subscription.Value.ValueKind == JsonValueKind.Object;
 }
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MTSS | Society Subscription Details</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
-    <style>
-        body {
-            margin: 0;
-            background: #f4f6fa;
-            font-family: Arial,sans-serif;
-        }
-
-        .sidebar {
-            width: 250px;
-            min-height: 100vh;
-            background: #17243a;
-            color: white;
-            position: fixed;
-            padding: 25px 18px;
-        
-            display: flex;
-            flex-direction: column;
-}
-
-        .brand {
-            font-size: 25px;
-            font-weight: bold;
-            margin-bottom: 40px;
-        }
-
-        .nav-link {
-            color: #cbd5e1;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            border-radius: 7px;
-        }
-
-            .nav-link.active, .nav-link:hover {
-                background: #2563eb;
-                color: white;
-            }
-
-        .main-content {
-            margin-left: 250px;
-            padding: 30px;
-        }
-
-        .content-card {
-            background: white;
-            border: 0;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 3px 15px rgba(0,0,0,.04);
-            margin-bottom: 24px;
-        }
-
-        .page-title {
-            font-weight: 600;
-        }
-
-        .detail-label {
-            color: #64748b;
-            font-size: 13px;
-            margin-bottom: 7px;
-        }
-
-        .detail-value {
-            color: #17243a;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .detail-item {
-            margin-bottom: 24px;
-        }
-
-        .status {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .active-status {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .inactive-status {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        @@media(max-width:768px) {
-            .sidebar {
-                width: 100%;
-                min-height: auto;
-                position: relative;
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 18px;
-            }
-        }
-    
-        .sidebar-bottom {
-            margin-top: auto;
-            padding-top: 16px;
-        }
-
-        .logout-link {
-            display: block;
-            width: 100%;
-            text-align: left;
-            color: #fca5a5;
-            background: transparent;
-            border: 0;
-            border-radius: 7px;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            font: inherit;
-            text-decoration: none;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        .logout-link:hover,
-        .logout-link:focus {
-            background: #dc2626;
-            color: #ffffff;
-        }
-
-    </style>
-</head>
-<body>
-
-    <aside class="sidebar">
-        <div class="brand">MTSS</div>
-        <p class="text-uppercase text-secondary small">Main Menu</p>
-        <nav class="nav flex-column">
-            <a class="nav-link" href="@Url.Action("Index","SuperAdmin")">Dashboard</a>
-            <a class="nav-link" href="@Url.Action("Societies","SuperAdmin")">Societies</a>
-            <a class="nav-link" href="@Url.Action("SubscriptionPlans","SuperAdmin")">Subscription Plans</a>
-            <a class="nav-link active" href="@Url.Action("SocietySubscriptions","SuperAdmin")">Society Subscriptions</a>
-            <a class="nav-link" href="#">Payments</a>
-            <a class="nav-link" href="#">Reports</a>
-            <a class="nav-link" href="#">Settings</a>
-        </nav>
-    
-        <div class="sidebar-bottom">
-            <form asp-controller="Auth" asp-action="Logout" method="post">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="logout-link">
-                    Logout
-                </button>
-            </form>
-        </div>
-
-    </aside>
-
-    <main class="main-content">
 
         <div class="mb-4">
             <a href="@Url.Action("SocietySubscriptions","SuperAdmin")" class="text-decoration-none">
-                ? Back to Society Subscriptions
+                <span data-icon="arrowLeft" class="mtss-icon-sm"></span> Back to Society Subscriptions
             </a>
             <h2 class="page-title mt-3">Society Subscription Details</h2>
             <p class="text-secondary">View and manage the society's assigned subscription.</p>
@@ -308,8 +144,3 @@
             </a>
         }
         </div>
-
-    </main>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>

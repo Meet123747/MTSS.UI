@@ -3,16 +3,112 @@
     ViewData["Title"] = "My Complaints";
     ViewData["PageHeading"] = "My complaints";
     var rows = ViewBag.Rows as List<JsonElement> ?? new();
-    string Val(JsonElement row, string key) => row.ValueKind == JsonValueKind.Object && row.TryGetProperty(key, out var v) ? v.ToString() : "";
+    string Val(JsonElement row, params string[] keys)
+    {
+        if (row.ValueKind != JsonValueKind.Object) return "";
+        foreach (var k in keys)
+            if (row.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null)
+                return v.ToString();
+        return "";
+    }
+    string FormatDate(string raw) => DateTime.TryParse(raw, out var dt) ? dt.ToString("dd MMM yyyy, hh:mm tt") : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
+    var statuses = rows.Select(r => Val(r, "status")).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s).ToList();
 }
-<div class="page-intro"><div><div class="page-eyebrow">SUPPORT CENTER</div><h1 class="page-title">My complaints</h1><p class="page-subtitle">Create a complaint and follow its progress.</p></div><a class="btn btn-resident" asp-action="CreateComplaint">＋ New complaint</a></div>
-@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
-<div class="resident-card">
-@if (rows.Count == 0) { <div class="empty-state"><div class="empty-icon">▤</div><strong>No complaints found</strong><p>Your submitted complaints will appear here.</p><a class="btn btn-resident mt-3" asp-action="CreateComplaint">Create your first complaint</a></div> }
-else { <div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Subject</th><th>Status</th><th>Created</th><th>Action</th></tr></thead><tbody>
-@foreach (var row in rows) {
-    var idText = Val(row,"id"); var subject = Val(row,"subject"); var status = Val(row,"status"); var created = Val(row,"createdAt");
-    <tr><td><strong>@(string.IsNullOrWhiteSpace(subject) ? "Complaint" : subject)</strong><div class="text-secondary mt-1">@Val(row,"description")</div></td><td><span class="status-pill @(status.Contains("Resolved",StringComparison.OrdinalIgnoreCase) ? "success" : status.Contains("Progress",StringComparison.OrdinalIgnoreCase) ? "warning" : "")">@(string.IsNullOrWhiteSpace(status) ? "Status unavailable" : status)</span></td><td>@(string.IsNullOrWhiteSpace(created) ? "—" : created)</td><td>@if (int.TryParse(idText,out var id)) { <a class="action-link" asp-action="ComplaintDetails" asp-route-id="@id">View details</a> } else { <span class="text-secondary">—</span> }</td></tr>
-}
-</tbody></table></div> }
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">SUPPORT CENTER</div>
+        <h1 class="page-title">My complaints</h1>
+        <p class="page-subtitle">Submit a complaint and track its status and admin remarks.</p>
+    </div>
+    <a class="btn btn-resident" asp-action="CreateComplaint"><span data-icon="plus" class="mtss-icon-sm"></span> New complaint</a>
 </div>
+
+@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+
+<div class="resident-card">
+    @if (rows.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-icon"><span data-icon="message"></span></div>
+            <strong>No complaints found</strong>
+            <p>Your submitted complaints will appear here.</p>
+            <a class="btn btn-resident mt-3" asp-action="CreateComplaint">Create your first complaint</a>
+        </div>
+    }
+    else
+    {
+        <div class="resident-toolbar">
+            <div><h2 class="section-heading">Complaint History <span class="badge text-bg-light ms-1">@rows.Count</span></h2></div>
+            <div class="resident-toolbar-controls">
+                <select id="complaintStatusFilter" class="form-select" style="width:auto">
+                    <option value="">All statuses</option>
+                    @foreach (var s in statuses)
+                    {
+                        <option value="@s.ToLowerInvariant()">@s</option>
+                    }
+                </select>
+                <input id="complaintSearch" class="form-control" style="width:220px" placeholder="Search complaints..." />
+            </div>
+        </div>
+        <div class="resident-table-wrap">
+            <table class="resident-table resident-table-cards">
+                <thead><tr><th>Subject &amp; Description</th><th>Status</th><th>Submitted</th><th>Updated</th><th>Action</th></tr></thead>
+                <tbody id="complaintRows">
+                    @foreach (var row in rows)
+                    {
+                        var idText = Val(row, "id", "complaintId");
+                        var subject = Val(row, "subject");
+                        var desc = Val(row, "description");
+                        var status = Val(row, "status");
+                        var created = Val(row, "createdAt");
+                        var updated = Val(row, "updatedAt", "resolvedAt");
+                        var pillClass = status.Contains("Resolved", StringComparison.OrdinalIgnoreCase) || status.Contains("Approved", StringComparison.OrdinalIgnoreCase)
+                            ? "success"
+                            : status.Contains("Progress", StringComparison.OrdinalIgnoreCase)
+                                ? "warning"
+                                : status.Contains("Rejected", StringComparison.OrdinalIgnoreCase) ? "danger" : "";
+                        <tr data-status="@status.ToLowerInvariant()">
+                            <td data-label="Complaint">
+                                <strong>@(string.IsNullOrWhiteSpace(subject) ? "Complaint" : subject)</strong>
+                                @if (!string.IsNullOrWhiteSpace(desc)) { <div class="text-secondary mt-1">@desc</div> }
+                            </td>
+                            <td data-label="Status"><span class="status-pill @pillClass">@(string.IsNullOrWhiteSpace(status) ? "Open" : status)</span></td>
+                            <td data-label="Submitted">@FormatDate(created)</td>
+                            <td data-label="Updated">@FormatDate(updated)</td>
+                            <td data-label="Action">
+                                @if (int.TryParse(idText, out var id))
+                                {
+                                    <a class="action-link" asp-action="ComplaintDetails" asp-route-id="@id">View details</a>
+                                }
+                                else
+                                {
+                                    <span class="text-secondary">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const search = document.getElementById('complaintSearch');
+            const filter = document.getElementById('complaintStatusFilter');
+            function apply() {
+                const q = (search?.value || '').toLowerCase();
+                const st = (filter?.value || '').toLowerCase();
+                document.querySelectorAll('#complaintRows tr').forEach(r => {
+                    const matchQ = !q || r.innerText.toLowerCase().includes(q);
+                    const matchS = !st || r.dataset.status === st;
+                    r.hidden = !(matchQ && matchS);
+                });
+            }
+            search?.addEventListener('input', apply);
+            filter?.addEventListener('change', apply);
+        })();
+    </script>
+}

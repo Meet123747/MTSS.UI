@@ -1,0 +1,169 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "My Parcels";
+    ViewData["PageHeading"] = "My parcels";
+    var rows = ViewBag.Rows as List<JsonElement> ?? new();
+    var endpointUnavailable = ViewBag.EndpointUnavailable is bool u && u;
+    var totalParcels = (int?)ViewBag.TotalParcels ?? rows.Count;
+    var awaitingCount = (int?)ViewBag.AwaitingCollection ?? 0;
+    var collectedCount = (int?)ViewBag.CollectedCount ?? 0;
+
+    string Val(JsonElement row, params string[] keys)
+    {
+        if (row.ValueKind != JsonValueKind.Object) return "";
+        foreach (var k in keys)
+            if (row.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null)
+                return v.ToString();
+        return "";
+    }
+    string FormatDate(string raw) => DateTime.TryParse(raw, out var dt) ? dt.ToString("dd MMM yyyy, hh:mm tt") : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
+}
+
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">RESIDENT SERVICES</div>
+        <h1 class="page-title">My Parcels</h1>
+        <p class="page-subtitle">Read-only view of parcels registered for your flat and their collection status.</p>
+    </div>
+    <a class="btn btn-outline-resident" asp-action="Dashboard">← Back to Overview</a>
+</div>
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div>
+}
+
+@if (endpointUnavailable)
+{
+    <div class="resident-card resident-card-body">
+        <div class="empty-state">
+            <div class="empty-icon"><span data-icon="package"></span></div>
+            <strong>Resident Parcel service is not available yet</strong>
+            <p class="mx-auto" style="max-width:560px">
+                The current MTSS backend only exposes parcel endpoints under <code>/api/societyadmin/parcels</code> (restricted to the <strong>SocietyAdmin</strong> role) and does not yet expose a resident-scoped parcel endpoint. Please contact your Society Admin for parcel collection updates.
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="stat-grid">
+        <div class="resident-card stat-card">
+            <div class="stat-icon"><span data-icon="package"></span></div>
+            <div>
+                <div class="stat-label">Total Parcels</div>
+                <div class="stat-value">@totalParcels</div>
+                <div class="stat-note">All parcels registered to your profile</div>
+            </div>
+        </div>
+        <div class="resident-card stat-card">
+            <div class="stat-icon"><span data-icon="clock"></span></div>
+            <div>
+                <div class="stat-label">Awaiting Collection</div>
+                <div class="stat-value">@awaitingCount</div>
+                <div class="stat-note">Status: Received</div>
+            </div>
+        </div>
+        <div class="resident-card stat-card">
+            <div class="stat-icon"><span data-icon="check"></span></div>
+            <div>
+                <div class="stat-label">Collected</div>
+                <div class="stat-value">@collectedCount</div>
+                <div class="stat-note">Status: Collected</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="resident-card">
+        @if (rows.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon"><span data-icon="package"></span></div>
+                <strong>No parcels found</strong>
+                <p>Parcels registered for you by your Society Admin will appear here.</p>
+            </div>
+        }
+        else
+        {
+            <div class="resident-toolbar">
+                <div><h2 class="section-heading">Parcel Deliveries <span class="badge text-bg-light ms-1">@rows.Count</span></h2></div>
+                <div class="resident-toolbar-controls">
+                    <select id="parcelStatusFilter" class="form-select" style="width:auto">
+                        <option value="">All statuses</option>
+                        <option value="received">Received (Awaiting collection)</option>
+                        <option value="collected">Collected</option>
+                    </select>
+                    <input id="parcelSearch" class="form-control" style="width:240px" placeholder="Search courier or tracking..." />
+                </div>
+            </div>
+            <div class="resident-table-wrap">
+                <table class="resident-table resident-table-cards">
+                    <thead>
+                        <tr>
+                            <th>Courier</th>
+                            <th>Tracking Number</th>
+                            <th>Received At</th>
+                            <th>Collected At</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="parcelRows">
+                        @foreach (var row in rows)
+                        {
+                            var idText = Val(row, "parcelId", "id");
+                            var courier = Val(row, "courierName");
+                            var tracking = Val(row, "trackingNumber");
+                            var received = Val(row, "receivedAt");
+                            var collected = Val(row, "collectedAt");
+                            var status = Val(row, "status");
+                            var isCollected = status.Equals("Collected", StringComparison.OrdinalIgnoreCase);
+
+                            <tr data-status="@status.ToLowerInvariant()">
+                                <td data-label="Courier"><strong>@(string.IsNullOrWhiteSpace(courier) ? "—" : courier)</strong></td>
+                                <td data-label="Tracking number">@(string.IsNullOrWhiteSpace(tracking) ? "—" : tracking)</td>
+                                <td data-label="Received">@FormatDate(received)</td>
+                                <td data-label="Collected">@FormatDate(collected)</td>
+                                <td data-label="Status">
+                                    <span class="status-pill @(isCollected ? "success" : "warning")">
+                                        @(isCollected ? "Collected" : "Received · Awaiting collection")
+                                    </span>
+                                </td>
+                                <td data-label="Action">
+                                    @if (int.TryParse(idText, out var pid))
+                                    {
+                                        <a class="action-link" asp-action="ParcelDetails" asp-route-id="@pid">View Details</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-secondary">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            const search = document.getElementById('parcelSearch');
+            const filter = document.getElementById('parcelStatusFilter');
+            function apply() {
+                const q = (search?.value || '').toLowerCase();
+                const st = (filter?.value || '').toLowerCase();
+                document.querySelectorAll('#parcelRows tr').forEach(r => {
+                    const matchQ = !q || r.innerText.toLowerCase().includes(q);
+                    const matchS = !st || r.dataset.status === st;
+                    r.hidden = !(matchQ && matchS);
+                });
+            }
+            search?.addEventListener('input', apply);
+            filter?.addEventListener('change', apply);
+        })();
+    </script>
+}

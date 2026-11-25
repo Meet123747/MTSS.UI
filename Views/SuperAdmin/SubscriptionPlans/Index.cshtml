@@ -3,222 +3,14 @@
 
     @{
     ViewData["Title"] = "Subscription Plans";
-    Layout = null;
+    Layout = "_SuperAdminLayout";
 
     var totalPlans = Model?.Count ?? 0;
     var activePlans = Model?.Count(p => p.IsActive) ?? 0;
     var inactivePlans = totalPlans - activePlans;
     }
 
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-        <title>MTSS | Subscription Plans</title>
-
-        <link rel="stylesheet"
-              href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-
-        <style>
-            body {
-                margin: 0;
-                background: #f4f6fa;
-                font-family: Arial, sans-serif;
-            }
-
-            .sidebar {
-                width: 250px;
-                min-height: 100vh;
-                background: #17243a;
-                color: white;
-                position: fixed;
-                padding: 25px 18px;
-            
-            display: flex;
-            flex-direction: column;
-}
-
-            .brand {
-                font-size: 25px;
-                font-weight: bold;
-                margin-bottom: 40px;
-            }
-
-            .nav-link {
-                color: #cbd5e1;
-                padding: 12px 15px;
-                margin-bottom: 8px;
-                border-radius: 7px;
-            }
-
-                .nav-link.active,
-                .nav-link:hover {
-                    background: #2563eb;
-                    color: white;
-                }
-
-            .main-content {
-                margin-left: 250px;
-                padding: 30px;
-            }
-
-            .content-card {
-                background: white;
-                border: none;
-                border-radius: 12px;
-                padding: 24px;
-                box-shadow: 0 3px 15px rgba(0,0,0,0.04);
-            }
-
-            .btn-primary {
-                background: #2563eb;
-                border-color: #2563eb;
-            }
-
-            .search-box {
-                max-width: 350px;
-            }
-
-            .table th {
-                background: #f8fafc;
-                color: #64748b;
-                font-size: 13px;
-                font-weight: 600;
-                padding: 15px;
-                white-space: nowrap;
-            }
-
-            .table td {
-                padding: 17px 15px;
-                vertical-align: middle;
-                white-space: nowrap;
-            }
-
-            .status {
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-            }
-
-            .active-status {
-                background: #dcfce7;
-                color: #15803d;
-            }
-
-            .inactive-status {
-                background: #fee2e2;
-                color: #b91c1c;
-            }
-
-            .plan-name {
-                font-weight: 600;
-            }
-
-            .page-title {
-                font-weight: 600;
-            }
-
-            .empty-state {
-                padding: 45px 15px;
-                text-align: center;
-                color: #64748b;
-            }
-
-            @@media (max-width: 768px) {
-                .sidebar {
-                    width: 100%;
-                    min-height: auto;
-                    position: relative;
-                }
-
-                .main-content {
-                    margin-left: 0;
-                    padding: 18px;
-                }
-            }
-        
-        .sidebar-bottom {
-            margin-top: auto;
-            padding-top: 16px;
-        }
-
-        .logout-link {
-            display: block;
-            width: 100%;
-            text-align: left;
-            color: #fca5a5;
-            background: transparent;
-            border: 0;
-            border-radius: 7px;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            font: inherit;
-            text-decoration: none;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        .logout-link:hover,
-        .logout-link:focus {
-            background: #dc2626;
-            color: #ffffff;
-        }
-
-    </style>
-    </head>
-
-    <body>
-
-        <!-- Sidebar -->
-        <aside class="sidebar">
-
-            <div class="brand">MTSS</div>
-
-            <p class="text-uppercase text-secondary small">
-                Main Menu
-            </p>
-
-            <nav class="nav flex-column">
-
-                <a class="nav-link"
-                   asp-controller="SuperAdmin"
-                   asp-action="Index">
-                    Dashboard
-                </a>
-
-                <a class="nav-link"
-                   href="@Url.Action("Societies", "SuperAdmin")">
-                    Societies
-                </a>
-
-                <a class="nav-link active"
-                   href="@Url.Action("SubscriptionPlans", "SuperAdmin")">
-                    Subscription Plans
-                </a>
-
-                <a class="nav-link" href="#">Payments</a>
-                <a class="nav-link" href="#">Reports</a>
-                <a class="nav-link" href="#">Settings</a>
-
-            </nav>
-
-        
-        <div class="sidebar-bottom">
-            <form asp-controller="Auth" asp-action="Logout" method="post">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="logout-link">
-                    Logout
-                </button>
-            </form>
-        </div>
-
-    </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
 
             <!-- Page Header -->
             <div class="d-flex justify-content-between
@@ -292,7 +84,7 @@
 
                     @if (Model != null && Model.Any())
                 {
-                    <table class="table table-hover" id="planTable">
+                    <table class="table table-hover sup-data-table" id="planTable">
 
                         <thead>
                             <tr>
@@ -314,25 +106,25 @@
                             @foreach (var plan in Model)
                             {
                             <tr>
-                                <td>
+                                <td data-label="Plan ID">
                                     #@plan.SubscriptionPlanId
                                 </td>
 
-                                <td class="plan-name">
+                                <td class="plan-name" data-label="Plan name">
                                     @plan.Name
                                 </td>
 
-                                <td>@plan.MaxWings</td>
+                                <td data-label="Max wings">@plan.MaxWings</td>
 
-                                <td>@plan.MaxFloorsPerWing</td>
+                                <td data-label="Max floors per wing">@plan.MaxFloorsPerWing</td>
 
-                                <td>@plan.MaxFlats</td>
+                                <td data-label="Max flats">@plan.MaxFlats</td>
 
-                                <td>@plan.MaxAmenities</td>
+                                <td data-label="Max amenities">@plan.MaxAmenities</td>
 
-                                <td>@plan.MaxSocietyAdmins</td>
+                                <td data-label="Max society admins">@plan.MaxSocietyAdmins</td>
 
-                                <td>
+                                <td data-label="Status">
                                     @if (plan.IsActive)
                                         {
                                     <span class="status active-status">
@@ -347,11 +139,11 @@
                                         }
                                 </td>
 
-                                <td>
+                                <td data-label="Created at">
                                     @plan.CreatedAt.ToString("dd MMM yyyy")
                                 </td>
 
-                                <td>
+                                <td data-label="Actions">
                                     <a asp-controller="SuperAdmin"
                                        asp-action="SubscriptionPlanDetails"
                                        asp-route-id="@plan.SubscriptionPlanId"
@@ -381,11 +173,8 @@
 
             </div>
 
-        </main>
-
-        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
-        <script>
+@section Scripts {
+<script>
             const planSearch = document.getElementById("planSearch");
 
             if (planSearch) {
@@ -402,6 +191,4 @@
                 });
             }
         </script>
-
-    </body>
-</html>
+}

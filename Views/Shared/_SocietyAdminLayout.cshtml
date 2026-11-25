@@ -1,4 +1,120 @@
 @using Microsoft.AspNetCore.Http
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var currentModule = (ViewContext.RouteData.Values["module"]?.ToString() ?? ViewBag.Module as string ?? "").ToLowerInvariant();
+
+    string ModuleNav(string mod) =>
+        currentModule == mod.ToLowerInvariant() ? "sa-nav active" : "sa-nav";
+
+    string ActionNav(string ctrl, string act) =>
+        currentController.Equals(ctrl, StringComparison.OrdinalIgnoreCase) &&
+        currentAction.Equals(act, StringComparison.OrdinalIgnoreCase) &&
+        string.IsNullOrEmpty(currentModule)
+            ? "sa-nav active"
+            : "sa-nav";
+
+    var fullName = Context.Session.GetString("FullName") ?? "Society Admin";
+    var initial = string.IsNullOrWhiteSpace(fullName) ? "S" : fullName.Trim()[0].ToString().ToUpperInvariant();
+}
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>@ViewData["Title"] - MTSS Society Admin</title><link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/><link rel="stylesheet" href="~/css/society-admin.css" asp-append-version="true"/></head>
-<body><div class="sa-shell"><aside class="sa-sidebar"><div class="sa-brand"><span class="sa-mark">M</span><span>MTSS <small>Society Admin</small></span></div><div class="sa-section">WORKSPACE</div><a asp-controller="SocietyAdminModules" asp-action="Dashboard">Dashboard</a><div class="sa-section">SOCIETY SETUP</div><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="wings">Wings</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="floors">Floors</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="flats">Flats</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="residents">Residents</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="amenities">Amenities</a><div class="sa-section">OPERATIONS</div><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="guests">Guest entries</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="parcels">Parcels</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="complaints">Complaints</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="notifications">Notifications</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="amenity-logs">Amenity access logs</a><a asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="amenity-pins">Amenity PIN records</a><a asp-controller="SocietyAdminModules" asp-action="ValidateAmenityPin">Validate amenity PIN</a><div class="sa-spacer"></div><form asp-controller="Auth" asp-action="Logout" method="post">@Html.AntiForgeryToken()<button class="sa-logout" type="submit">Logout</button></form></aside><main class="sa-main"><header class="sa-topbar"><div><strong>Society workspace</strong><div class="text-secondary small">Manage your community operations</div></div><div class="sa-user">@Context.Session.GetString("FullName")</div></header><div class="sa-content">@RenderBody()</div></main></div><script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>@await RenderSectionAsync("Scripts", required:false)</body></html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MTSS Society Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mtss-design-system.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/society-admin.css" asp-append-version="true" />
+</head>
+<body>
+<div class="sa-shell bg-slate-50 text-slate-900">
+    <aside class="sa-sidebar" id="saSidebar">
+        <a class="sa-brand" asp-controller="SocietyAdminModules" asp-action="Dashboard">
+            <span class="sa-mark">M</span>
+            <span>MTSS<small>SOCIETY ADMIN</small></span>
+        </a>
+
+        <div class="sa-section">WORKSPACE</div>
+        <a class="@ActionNav("SocietyAdminModules", "Dashboard")" asp-controller="SocietyAdminModules" asp-action="Dashboard">
+            <span data-icon="home"></span> Dashboard
+        </a>
+
+        <div class="sa-section">SOCIETY SETUP</div>
+        <a class="@ModuleNav("wings")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="wings">
+            <span data-icon="building"></span> Wings
+        </a>
+        <a class="@ModuleNav("floors")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="floors">
+            <span data-icon="layers"></span> Floors
+        </a>
+        <a class="@ModuleNav("flats")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="flats">
+            <span data-icon="grid"></span> Flats
+        </a>
+        <a class="@ModuleNav("residents")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="residents">
+            <span data-icon="users"></span> Residents
+        </a>
+        <a class="@ModuleNav("amenities")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="amenities">
+            <span data-icon="sparkles"></span> Amenities
+        </a>
+
+        <div class="sa-section">OPERATIONS</div>
+        <a class="@ModuleNav("guests")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="guests">
+            <span data-icon="user"></span> Guest entries
+        </a>
+        <a class="@ModuleNav("parcels")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="parcels">
+            <span data-icon="package"></span> Parcels
+        </a>
+        <a class="@ModuleNav("complaints")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="complaints">
+            <span data-icon="message"></span> Complaints
+        </a>
+        <a class="@ModuleNav("notifications")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="notifications">
+            <span data-icon="bell"></span> Notifications
+        </a>
+        <a class="@ModuleNav("amenity-logs")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="amenity-logs">
+            <span data-icon="activity"></span> Amenity access logs
+        </a>
+        <a class="@ModuleNav("amenity-pins")" asp-controller="SocietyAdminModules" asp-action="Index" asp-route-module="amenity-pins">
+            <span data-icon="key"></span> Amenity PIN records
+        </a>
+        <a class="@ActionNav("SocietyAdminModules", "ValidateAmenityPin")" asp-controller="SocietyAdminModules" asp-action="ValidateAmenityPin">
+            <span data-icon="shield"></span> Validate amenity PIN
+        </a>
+
+        <div class="sa-spacer"></div>
+        <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
+            @Html.AntiForgeryToken()
+            <button class="sa-logout" type="submit">
+                <span data-icon="logout"></span> Sign Out
+            </button>
+        </form>
+    </aside>
+
+    <main class="sa-main">
+        <header class="sa-topbar">
+            <button class="sa-mobile-btn" type="button" data-drawer-toggle="saSidebar" data-drawer-overlay="saOverlay" aria-label="Toggle navigation" aria-expanded="false">
+                <span data-icon="menu"></span>
+            </button>
+            <div class="sa-topbar-title">
+                <strong>@(ViewData["Title"] ?? "Society workspace")</strong>
+                <span>Manage your community operations</span>
+            </div>
+            <div class="sa-user">
+                <span class="sa-avatar">@initial</span>
+                <span class="sa-username">@fullName</span>
+            </div>
+        </header>
+
+        <div class="sa-content mtss-animate-in mx-auto w-full">
+            @RenderBody()
+        </div>
+    </main>
+</div>
+
+<div class="sa-overlay" id="saOverlay"></div>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/mtss-lucide.js" asp-append-version="true"></script>
+<script src="~/js/mtss-ui.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

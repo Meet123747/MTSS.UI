@@ -2,37 +2,192 @@
 @{
     ViewData["Title"] = "Resident Dashboard";
     ViewData["PageHeading"] = "Overview";
-    var recent = ViewBag.RecentNotifications as List<JsonElement> ?? new();
+    var recentNotifications = ViewBag.RecentNotifications as List<JsonElement> ?? new();
+    var recentComplaints = ViewBag.RecentComplaints as List<JsonElement> ?? new();
+    var complaintCount = (int?)ViewBag.ComplaintCount ?? 0;
+    var openCount = (int?)ViewBag.OpenComplaintCount ?? 0;
+    var inProgressCount = (int?)ViewBag.InProgressComplaintCount ?? 0;
+    var resolvedCount = (int?)ViewBag.ResolvedComplaintCount ?? 0;
+    var notificationCount = (int?)ViewBag.NotificationCount ?? 0;
+    var unreadCount = (int?)ViewBag.UnreadNotificationCount ?? 0;
+    var pinCount = (int?)ViewBag.PinCount ?? 0;
+    var activePinCount = (int?)ViewBag.ActivePinCount ?? 0;
+
+    string Val(JsonElement row, params string[] keys)
+    {
+        if (row.ValueKind != JsonValueKind.Object) return "";
+        foreach (var k in keys)
+        {
+            if (row.TryGetProperty(k, out var p) && p.ValueKind != JsonValueKind.Null)
+                return p.ToString();
+        }
+        return "";
+    }
 }
-<div class="page-intro">
-    <div><div class="page-eyebrow">RESIDENT WORKSPACE</div><h1 class="page-title">Welcome back, @(ViewBag.FullName)</h1><p class="page-subtitle">Here is an overview of your resident services.</p></div>
+
+<div class="resident-hero">
+    <div>
+        <div class="eyebrow">RESIDENT WORKSPACE</div>
+        <h1>Welcome back, @(ViewBag.FullName)</h1>
+        <p>
+            @if (!string.IsNullOrWhiteSpace(ViewBag.Email as string))
+            {
+                <span>Signed in as <strong>@ViewBag.Email</strong> · </span>
+            }
+            Live summary of your complaints, notifications, and amenity PINs.
+        </p>
+    </div>
+    <a class="resident-hero-btn" asp-action="CreateComplaint"><span data-icon="plus" class="mtss-icon-sm"></span> New complaint</a>
 </div>
-@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div>
+}
+
 <div class="stat-grid">
-    <div class="resident-card stat-card"><div class="stat-icon">▤</div><div><div class="stat-label">My complaints</div><div class="stat-value">@((int?)ViewBag.ComplaintCount ?? 0)</div><div class="stat-note">Records returned by the complaints API</div></div></div>
-    <div class="resident-card stat-card"><div class="stat-icon">♧</div><div><div class="stat-label">Notifications</div><div class="stat-value">@((int?)ViewBag.NotificationCount ?? 0)</div><div class="stat-note">Records returned by the notifications API</div></div></div>
-    <div class="resident-card stat-card"><div class="stat-icon">⌁</div><div><div class="stat-label">Amenity PINs</div><div class="stat-value">@((int?)ViewBag.PinCount ?? 0)</div><div class="stat-note">Your PIN records from the backend</div></div></div>
-</div>
-<div class="resident-card resident-card-body mb-4">
-    <div class="mb-3"><h2 class="section-heading">Quick access</h2><div class="section-note">Go directly to your resident services</div></div>
-    <div class="quick-grid">
-        <a class="quick-link" asp-action="Complaints"><span class="quick-link-icon">▤</span><span><strong>My complaints</strong><small>Submit and track issues</small></span></a>
-        <a class="quick-link" asp-action="Notifications"><span class="quick-link-icon">♧</span><span><strong>Notifications</strong><small>View community updates</small></span></a>
-        <a class="quick-link" asp-action="Amenities"><span class="quick-link-icon">⌁</span><span><strong>Amenity PINs</strong><small>Manage access PINs</small></span></a>
+    <div class="resident-card stat-card">
+        <div class="stat-icon"><span data-icon="message"></span></div>
+        <div>
+            <div class="stat-label">My Complaints</div>
+            <div class="stat-value">@complaintCount</div>
+            <div class="stat-note">@openCount open · @inProgressCount in progress · @resolvedCount resolved</div>
+        </div>
+    </div>
+    <div class="resident-card stat-card">
+        <div class="stat-icon"><span data-icon="bell"></span></div>
+        <div>
+            <div class="stat-label">Notifications</div>
+            <div class="stat-value">@unreadCount <small class="text-secondary fs-6 fw-normal">unread</small></div>
+            <div class="stat-note">@notificationCount total notifications from backend</div>
+        </div>
+    </div>
+    <div class="resident-card stat-card">
+        <div class="stat-icon"><span data-icon="key"></span></div>
+        <div>
+            <div class="stat-label">Amenity PINs</div>
+            <div class="stat-value">@activePinCount <small class="text-secondary fs-6 fw-normal">active</small></div>
+            <div class="stat-note">@pinCount total PIN records generated</div>
+        </div>
     </div>
 </div>
-<div class="resident-card">
-    <div class="resident-card-body d-flex justify-content-between align-items-center"><div><h2 class="section-heading">Recent notifications</h2><div class="section-note">Latest items returned by your notifications API</div></div><a class="action-link" asp-action="Notifications">View all</a></div>
-    @if (ViewBag.NotificationError != null) { <div class="px-4 pb-3 text-danger small">@ViewBag.NotificationError</div> }
-    else if (recent.Count == 0) { <div class="empty-state"><div class="empty-icon">♧</div><strong>No notifications yet</strong><p>New updates will appear here when available.</p></div> }
-    else {
-        <div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Notification</th><th>Details</th><th></th></tr></thead><tbody>
-        @foreach (var row in recent) {
-            var id = row.ValueKind == JsonValueKind.Object && row.TryGetProperty("id", out var idProp) ? idProp.ToString() : "";
-            var title = row.ValueKind == JsonValueKind.Object && row.TryGetProperty("title", out var titleProp) ? titleProp.ToString() : "Notification";
-            var message = row.ValueKind == JsonValueKind.Object && row.TryGetProperty("message", out var msgProp) ? msgProp.ToString() : "Open to view details";
-            <tr><td><strong>@title</strong></td><td>@message</td><td>@if (int.TryParse(id, out var parsedId)) { <a class="action-link" asp-action="NotificationDetails" asp-route-id="@parsedId">Open</a> }</td></tr>
-        }
-        </tbody></table></div>
-    }
+
+<div class="resident-card resident-card-body mb-4">
+    <div class="mb-3">
+        <h2 class="section-heading">Quick access</h2>
+        <div class="section-note">Navigate directly to your resident services</div>
+    </div>
+    <div class="quick-grid">
+        <a class="quick-link" asp-action="Complaints"><span class="quick-link-icon"><span data-icon="message"></span></span><span><strong>My Complaints</strong><small>Submit and track issues</small></span></a>
+        <a class="quick-link" asp-action="Notifications"><span class="quick-link-icon"><span data-icon="bell"></span></span><span><strong>Notifications</strong><small>@unreadCount unread updates</small></span></a>
+        <a class="quick-link" asp-action="Amenities"><span class="quick-link-icon"><span data-icon="key"></span></span><span><strong>Amenity PINs</strong><small>Generate or revoke access PINs</small></span></a>
+        <a class="quick-link" asp-action="Guests"><span class="quick-link-icon"><span data-icon="users"></span></span><span><strong>Guest Management</strong><small>Resident guest entries</small></span></a>
+        <a class="quick-link" asp-action="Parcels"><span class="quick-link-icon"><span data-icon="package"></span></span><span><strong>My Parcels</strong><small>Flat parcel deliveries</small></span></a>
+        <a class="quick-link" asp-action="Profile"><span class="quick-link-icon"><span data-icon="user"></span></span><span><strong>My Profile</strong><small>Account &amp; session details</small></span></a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="resident-card h-100">
+            <div class="resident-card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="section-heading">Recent complaints</h2>
+                    <div class="section-note">Latest items from your complaints API</div>
+                </div>
+                <a class="action-link" asp-action="Complaints">View all</a>
+            </div>
+            @if (ViewBag.ComplaintError != null)
+            {
+                <div class="px-4 pb-3 text-danger small">@ViewBag.ComplaintError</div>
+            }
+            else if (recentComplaints.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon"><span data-icon="message"></span></div>
+                    <strong>No complaints submitted</strong>
+                    <p>Your submitted complaints will appear here.</p>
+                </div>
+            }
+            else
+            {
+                <div class="resident-table-wrap">
+                    <table class="resident-table resident-table-cards" style="min-width:0">
+                        <thead><tr><th>Subject</th><th>Status</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var row in recentComplaints)
+                            {
+                                var idText = Val(row, "id", "complaintId");
+                                var subject = Val(row, "subject");
+                                var status = Val(row, "status");
+                                var pillClass = status.Contains("Resolved", StringComparison.OrdinalIgnoreCase) || status.Contains("Approved", StringComparison.OrdinalIgnoreCase)
+                                    ? "success"
+                                    : status.Contains("Progress", StringComparison.OrdinalIgnoreCase) ? "warning" : "";
+                                <tr>
+                                    <td data-label="Subject"><strong>@(string.IsNullOrWhiteSpace(subject) ? "Complaint" : subject)</strong></td>
+                                    <td data-label="Status"><span class="status-pill @pillClass">@(string.IsNullOrWhiteSpace(status) ? "Open" : status)</span></td>
+                                    <td data-label="Action" class="text-end">
+                                        @if (int.TryParse(idText, out var cid))
+                                        {
+                                            <a class="action-link" asp-action="ComplaintDetails" asp-route-id="@cid">Open</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="resident-card h-100">
+            <div class="resident-card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="section-heading">Recent notifications</h2>
+                    <div class="section-note">Latest items from your notifications API</div>
+                </div>
+                <a class="action-link" asp-action="Notifications">View all</a>
+            </div>
+            @if (ViewBag.NotificationError != null)
+            {
+                <div class="px-4 pb-3 text-danger small">@ViewBag.NotificationError</div>
+            }
+            else if (recentNotifications.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon"><span data-icon="bell"></span></div>
+                    <strong>No notifications yet</strong>
+                    <p>New updates will appear here when available.</p>
+                </div>
+            }
+            else
+            {
+                <div class="resident-table-wrap">
+                    <table class="resident-table resident-table-cards" style="min-width:0">
+                        <thead><tr><th>Notification</th><th>State</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var row in recentNotifications)
+                            {
+                                var idText = Val(row, "id", "notificationId");
+                                var title = Val(row, "title");
+                                var isRead = Val(row, "isRead").Equals("true", StringComparison.OrdinalIgnoreCase);
+                                <tr>
+                                    <td data-label="Notification"><strong>@(string.IsNullOrWhiteSpace(title) ? "Notification" : title)</strong></td>
+                                    <td data-label="State"><span class="status-pill @(isRead ? "success" : "warning")">@(isRead ? "Read" : "Unread")</span></td>
+                                    <td data-label="Action" class="text-end">
+                                        @if (int.TryParse(idText, out var nid))
+                                        {
+                                            <a class="action-link" asp-action="NotificationDetails" asp-route-id="@nid">Open</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 </div>

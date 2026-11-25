@@ -3,12 +3,102 @@
     ViewData["Title"] = "PIN Generated";
     ViewData["PageHeading"] = "PIN generated";
     JsonElement? data = ViewBag.GeneratedData is JsonElement element ? element : null;
-    string pin = "";
-    if (data.HasValue && data.Value.ValueKind == JsonValueKind.Object && data.Value.TryGetProperty("pin", out var pinProp)) pin = pinProp.ToString();
+
+    string Val(string key) =>
+        data.HasValue && data.Value.ValueKind == JsonValueKind.Object &&
+        data.Value.TryGetProperty(key, out var p) && p.ValueKind != JsonValueKind.Null
+            ? p.ToString()
+            : "";
+
+    var pin = Val("pin");
+    var amenityName = Val("amenityName");
+    var generatedRaw = Val("generatedAt");
+    var expiresRaw = Val("expiresAt");
+
+    string FormatDate(string raw) => DateTime.TryParse(raw, out var dt) ? dt.ToString("dd MMM yyyy, hh:mm:ss tt") : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
+    string ValidityWindow()
+    {
+        if (DateTime.TryParse(generatedRaw, out var g) && DateTime.TryParse(expiresRaw, out var e))
+        {
+            var mins = Math.Max(0, (int)Math.Round((e - g).TotalMinutes));
+            return $"{mins} minutes";
+        }
+        return "15 minutes";
+    }
 }
-<div class="page-intro"><div><div class="page-eyebrow">COMMUNITY AMENITIES</div><h1 class="page-title">Your PIN is ready</h1><p class="page-subtitle">The backend has processed your PIN generation request.</p></div><a class="btn btn-outline-resident" asp-action="Amenities">View my PINs</a></div>
-<div class="resident-card resident-card-body">
-    <div class="pin-highlight mb-4"><div class="pin-label">AMENITY ACCESS PIN</div><div class="pin-code">@(string.IsNullOrWhiteSpace(pin) ? "Generated" : pin)</div><p>Use the PIN according to your society's access process.</p></div>
-    <div class="section-heading mb-2">API response data</div>
-    @if (data.HasValue) { <pre class="json-details mb-0">@JsonSerializer.Serialize(data.Value, new JsonSerializerOptions { WriteIndented = true })</pre> } else { <p class="text-secondary small mb-0">The backend confirmed the action but did not return a data object.</p> }
+
+<div class="page-intro">
+    <div>
+        <div class="page-eyebrow">COMMUNITY AMENITIES</div>
+        <h1 class="page-title">Your PIN is Ready</h1>
+        <p class="page-subtitle">Save or copy this 6-digit PIN now. For security, historical PINs are hashed and cannot be viewed again later.</p>
+    </div>
+    <a class="btn btn-outline-resident" asp-action="Amenities">Return to My Amenity PINs</a>
 </div>
+
+<div class="resident-card resident-card-body">
+    <div class="pin-showcase">
+        <div class="small text-uppercase fw-semibold opacity-75">@(string.IsNullOrWhiteSpace(amenityName) ? "AMENITY ACCESS PIN" : amenityName.ToUpperInvariant() + " · ACCESS PIN")</div>
+        <div class="pin-digits" id="generatedPinCode">@(string.IsNullOrWhiteSpace(pin) ? "Generated" : pin)</div>
+        @if (!string.IsNullOrWhiteSpace(pin))
+        {
+            <button type="button" class="btn btn-sm btn-light mt-2 d-inline-flex align-items-center gap-2" onclick="copyGeneratedPin(this)"><span data-icon="copy" class="mtss-icon-sm"></span> Copy PIN</button>
+        }
+        <p class="mt-3 mb-0 small opacity-75">Valid for @ValidityWindow() · Single-use entry verification</p>
+    </div>
+
+    <div class="detail-grid mb-4">
+        <div class="detail-item">
+            <small>Amenity</small>
+            <strong>@(string.IsNullOrWhiteSpace(amenityName) ? "—" : amenityName)</strong>
+        </div>
+        <div class="detail-item">
+            <small>Validity</small>
+            <strong id="remainingValidity" data-expires="@expiresRaw">@ValidityWindow()</strong>
+        </div>
+        <div class="detail-item">
+            <small>Generated At</small>
+            <strong>@FormatDate(generatedRaw)</strong>
+        </div>
+        <div class="detail-item">
+            <small>Expires At</small>
+            <strong>@FormatDate(expiresRaw)</strong>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a class="btn btn-resident" asp-action="Amenities">Return to My Amenity PINs</a>
+        <a class="btn btn-outline-resident" asp-action="GeneratePin">Generate Another PIN</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyGeneratedPin(btn) {
+            const pin = document.getElementById('generatedPinCode')?.textContent?.trim();
+            if (!pin || !navigator.clipboard) return;
+            navigator.clipboard.writeText(pin).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = 'Copy PIN'; }, 2000);
+            });
+        }
+        (function () {
+            const el = document.getElementById('remainingValidity');
+            if (!el || !el.dataset.expires) return;
+            const exp = Date.parse(el.dataset.expires);
+            if (isNaN(exp)) return;
+            function tick() {
+                const diffSec = Math.floor((exp - Date.now()) / 1000);
+                if (diffSec <= 0) {
+                    el.textContent = 'Expired';
+                    return;
+                }
+                const m = Math.floor(diffSec / 60);
+                const s = diffSec % 60;
+                el.textContent = `${m}m ${s.toString().padStart(2, '0')}s remaining`;
+            }
+            tick();
+            setInterval(tick, 1000);
+        })();
+    </script>
+}
