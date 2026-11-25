@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4f6fb" />
+    <meta name="description" content="MTSS — Management of Township and Society System. One connected workspace for residents, society administrators and platform administrators." />
+    <title>MTSS — Community operations, in sync</title>
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/public-landing.css" asp-append-version="true" />
+</head>
+<body class="public-site">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <header class="public-header">
+        <div class="public-container header-inner">
+            <a class="public-brand" href="#top" aria-label="MTSS home">
+                <span class="brand-mark">M</span>
+                <span class="brand-name">MTSS<span>COMMUNITY OPERATIONS</span></span>
+            </a>
+            <button class="nav-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-navigation">
+                <span data-icon="menu"></span>
+            </button>
+            <nav class="primary-navigation" id="primary-navigation" aria-label="Main navigation">
+                <a href="#platform">The platform</a>
+                <a href="#experiences">For every role</a>
+                <a href="#capabilities">Capabilities</a>
+                <a href="#how-it-works">How it works</a>
+                <a class="nav-signin" asp-controller="Auth" asp-action="Login" asp-route-mode="signin">Sign in <span data-icon="arrowRight"></span></a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <section class="hero-section" id="top">
+            <div class="hero-glow hero-glow-one" aria-hidden="true"></div>
+            <div class="hero-glow hero-glow-two" aria-hidden="true"></div>
+            <div class="public-container hero-grid">
+                <div class="hero-copy reveal">
+                    <p class="eyebrow"><span class="eyebrow-dot"></span> A shared home for community operations</p>
+                    <h1>Community life,<br /><span>beautifully in sync.</span></h1>
+                    <p class="hero-description">
+                        MTSS — the <strong>Management of Township and Society System</strong> — brings residents,
+                        society teams and platform administrators into one connected experience.
+                    </p>
+                    <div class="hero-actions">
+                        <a class="button button-primary" asp-controller="Auth" asp-action="Login" asp-route-mode="signin">
+                            Get started <span data-icon="arrowRight"></span>
+                        </a>
+                        <a class="button button-quiet" href="#capabilities">
+                            Discover features <span data-icon="arrowRight"></span>
+                        </a>
+                    </div>
+                    <div class="hero-caption">
+                        <span class="caption-icon"><span data-icon="shield"></span></span>
+                        <span>One platform. Three role-specific workspaces.</span>
+                    </div>
+                </div>
+
+                <div class="hero-visual reveal" role="img" aria-label="Illustration of the Resident, Society Admin and Super Admin workspaces connected through MTSS">
+                    <div class="visual-halo" aria-hidden="true"></div>
+                    <div class="visual-orbit orbit-outer" aria-hidden="true"></div>
+                    <div class="visual-orbit orbit-inner" aria-hidden="true"></div>
+                    <div class="visual-core">
+                        <span class="core-mark">M</span>
+                        <span class="core-label">MTSS</span>
+                        <span class="core-caption">One connected system</span>
+                    </div>
+                    <div class="workspace-card workspace-resident">
+                        <span class="workspace-icon"><span data-icon="users"></span></span>
+                        <span><strong>Resident</strong><small>Everyday services</small></span>
+                        <span class="workspace-link" data-icon="arrowRight"></span>
+                    </div>
+                    <div class="workspace-card workspace-society">
+                        <span class="workspace-icon"><span data-icon="building"></span></span>
+                        <span><strong>Society Admin</strong><small>Community operations</small></span>
+                        <span class="workspace-link" data-icon="arrowRight"></span>
+                    </div>
+                    <div class="workspace-card workspace-super">
+                        <span class="workspace-icon"><span data-icon="layers"></span></span>
+                        <span><strong>Super Admin</strong><small>Platform oversight</small></span>
+                        <span class="workspace-link" data-icon="arrowRight"></span>
+                    </div>
+                    <div class="visual-tag tag-left"><span data-icon="check"></span> Clear roles</div>
+                    <div class="visual-tag tag-right"><span data-icon="activity"></span> Connected workflows</div>
+                </div>
+            </div>
+            <a class="hero-scroll" href="#platform" aria-label="Scroll to learn about MTSS"><span></span></a>
+        </section>
+
+        <section class="intro-section section-pad" id="platform">
+            <div class="public-container intro-grid">
+                <div class="section-kicker reveal">
+                    <span>01</span>
+                    <p>One place to<br />move community life forward</p>
+                </div>
+                <div class="intro-copy reveal">
+                    <p class="eyebrow">Meet MTSS</p>
+                    <h2>Township management is a team effort.<br /><span>Your tools should be, too.</span></h2>
+                    <p>
+                        A community runs on many connected details: homes and residents, shared amenities,
+                        service requests and day-to-day coordination. MTSS gives each participant a focused
+                        workspace, while keeping the experience part of one role-based system.
+                    </p>
+                    <p>
+                        Built for the people who live in a community, the teams who operate it, and the
+                        administrators who oversee the platform.
+                    </p>
+                </div>
+                <div class="intro-aside reveal">
+                    <div class="aside-rule"></div>
+                    <span class="aside-icon"><span data-icon="sparkles"></span></span>
+                    <p class="aside-quote">“A clearer view of the work that keeps a community moving.”</p>
+                    <span class="aside-note">The MTSS vision</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="experience-section section-pad" id="experiences">
+            <div class="public-container">
+                <div class="section-heading reveal">
+                    <div>
+                        <p class="eyebrow">Designed around people</p>
+                        <h2>Three perspectives.<br /><span>One community.</span></h2>
+                    </div>
+                    <p>Each role sees the tools and responsibilities that belong to its part of the community journey.</p>
+                </div>
+                <div class="experience-grid">
+                    <article class="experience-card experience-resident reveal">
+                        <div class="experience-topline"><span>01 / RESIDENT</span><span class="experience-icon"><span data-icon="home"></span></span></div>
+                        <h3>Your community,<br />within reach.</h3>
+                        <p>Access resident services in one place, from submitting a complaint to checking parcel and amenity PIN details.</p>
+                        <ul>
+                            <li><span data-icon="message"></span> Submit and follow complaints</li>
+                            <li><span data-icon="key"></span> Generate and review amenity PINs</li>
+                            <li><span data-icon="package"></span> View parcel and community updates</li>
+                        </ul>
+                        <span class="experience-watermark" aria-hidden="true"><span data-icon="home"></span></span>
+                    </article>
+                    <article class="experience-card experience-society reveal">
+                        <div class="experience-topline"><span>02 / SOCIETY ADMIN</span><span class="experience-icon"><span data-icon="building"></span></span></div>
+                        <h3>The details that<br />keep things moving.</h3>
+                        <p>Organize society records and coordinate the operational services residents rely on.</p>
+                        <ul>
+                            <li><span data-icon="grid"></span> Maintain wings, floors, flats and residents</li>
+                            <li><span data-icon="users"></span> Manage guests, parcels and complaints</li>
+                            <li><span data-icon="activity"></span> Review amenity access and reports</li>
+                        </ul>
+                        <span class="experience-watermark" aria-hidden="true"><span data-icon="building"></span></span>
+                    </article>
+                    <article class="experience-card experience-super reveal">
+                        <div class="experience-topline"><span>03 / SUPER ADMIN</span><span class="experience-icon"><span data-icon="layers"></span></span></div>
+                        <h3>A wider view<br />of the platform.</h3>
+                        <p>Oversee the societies and subscription structure that bring communities onto MTSS.</p>
+                        <ul>
+                            <li><span data-icon="building"></span> Manage registered societies</li>
+                            <li><span data-icon="layers"></span> Configure plans and assignments</li>
+                            <li><span data-icon="chart"></span> Review platform reports and settings</li>
+                        </ul>
+                        <span class="experience-watermark" aria-hidden="true"><span data-icon="layers"></span></span>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="capabilities-section section-pad" id="capabilities">
+            <div class="public-container capability-grid">
+                <div class="capability-intro reveal">
+                    <p class="eyebrow">What MTSS brings together</p>
+                    <h2>From the shape<br />of a society to<br /><span>the services within it.</span></h2>
+                    <p>Purposeful tools for the real, connected work of managing a community.</p>
+                    <a class="text-link" href="#how-it-works">See how it comes together <span data-icon="arrowRight"></span></a>
+                </div>
+                <div class="capability-list">
+                    <article class="capability-item reveal">
+                        <span class="capability-number">01</span>
+                        <span class="capability-icon"><span data-icon="grid"></span></span>
+                        <div><h3>Community structure</h3><p>Keep wings, floors, flats and resident records organized in the Society Admin workspace.</p></div>
+                        <span class="capability-arrow" data-icon="arrowRight"></span>
+                    </article>
+                    <article class="capability-item reveal">
+                        <span class="capability-number">02</span>
+                        <span class="capability-icon"><span data-icon="message"></span></span>
+                        <div><h3>Resident services</h3><p>Bring complaints, notifications, amenity PINs and parcel information into a resident-facing experience.</p></div>
+                        <span class="capability-arrow" data-icon="arrowRight"></span>
+                    </article>
+                    <article class="capability-item reveal">
+                        <span class="capability-number">03</span>
+                        <span class="capability-icon"><span data-icon="activity"></span></span>
+                        <div><h3>Day-to-day operations</h3><p>Give society teams tools for guest entries, parcel records, amenities and access activity.</p></div>
+                        <span class="capability-arrow" data-icon="arrowRight"></span>
+                    </article>
+                    <article class="capability-item reveal">
+                        <span class="capability-number">04</span>
+                        <span class="capability-icon"><span data-icon="layers"></span></span>
+                        <div><h3>Platform oversight</h3><p>Manage societies, subscription plans and assignments from the Super Admin workspace.</p></div>
+                        <span class="capability-arrow" data-icon="arrowRight"></span>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="journey-section section-pad" id="how-it-works">
+            <div class="public-container">
+                <div class="section-heading journey-heading reveal">
+                    <div><p class="eyebrow">A connected journey</p><h2>Set up. Take part.<br /><span>Keep the community moving.</span></h2></div>
+                    <p>MTSS brings each role into the same flow, with access shaped by the account’s existing role.</p>
+                </div>
+                <div class="journey-track">
+                    <article class="journey-step reveal">
+                        <span class="step-index">01</span>
+                        <span class="step-icon"><span data-icon="building"></span></span>
+                        <h3>Set up the society</h3>
+                        <p>Society administrators organize the community structure and maintain its operational records.</p>
+                        <span class="step-connector" aria-hidden="true"></span>
+                    </article>
+                    <article class="journey-step reveal">
+                        <span class="step-index">02</span>
+                        <span class="step-icon"><span data-icon="users"></span></span>
+                        <h3>Sign in by role</h3>
+                        <p>Residents and administrators sign in through the existing MTSS login experience.</p>
+                        <span class="step-connector" aria-hidden="true"></span>
+                    </article>
+                    <article class="journey-step reveal">
+                        <span class="step-index">03</span>
+                        <span class="step-icon"><span data-icon="activity"></span></span>
+                        <h3>Use the right workspace</h3>
+                        <p>Role-based navigation takes each account to its Resident, Society Admin or Super Admin panel.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="closing-section">
+            <div class="closing-glow" aria-hidden="true"></div>
+            <div class="public-container closing-content reveal">
+                <span class="closing-mark"><span data-icon="sparkles"></span></span>
+                <p class="eyebrow">A better-connected community starts here</p>
+                <h2>Bring your community<br /><span>into focus.</span></h2>
+                <p>Explore the MTSS experience through the existing secure sign-in.</p>
+                <a class="button button-light" asp-controller="Auth" asp-action="Login" asp-route-mode="signin">
+                    Enter MTSS <span data-icon="arrowRight"></span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="public-footer">
+        <div class="public-container footer-main">
+            <div class="footer-brand-block">
+                <a class="public-brand footer-brand" href="#top" aria-label="MTSS home">
+                    <span class="brand-mark">M</span>
+                    <span class="brand-name">MTSS<span>MANAGEMENT OF TOWNSHIP AND SOCIETY SYSTEM</span></span>
+                </a>
+                <p>A shared digital workspace for the people and teams who make a community work.</p>
+            </div>
+            <div class="footer-links">
+                <div><span class="footer-label">Explore</span><a href="#platform">The platform</a><a href="#experiences">For every role</a><a href="#capabilities">Capabilities</a></div>
+                <div><span class="footer-label">Get started</span><a href="#how-it-works">How it works</a><a asp-controller="Auth" asp-action="Login" asp-route-mode="signin">Sign in</a><a asp-controller="Home" asp-action="Privacy">Privacy</a></div>
+            </div>
+        </div>
+        <div class="public-container footer-bottom">
+            <span>© @DateTime.Now.Year MTSS</span>
+            <span>Management of Township and Society System</span>
+        </div>
+    </footer>
+
+    <script src="~/js/mtss-lucide.js" asp-append-version="true"></script>
+    <script src="~/js/public-landing.js" asp-append-version="true"></script>
+</body>
+</html>

@@ -1,141 +1,138 @@
-
 @model MTSS.UI.Models.ViewModels.Auth.LoginViewModel
+@using Microsoft.AspNetCore.Http
 
 @{
-    ViewData["Title"] = "Login";
+    var requestedMode = Context.Request.Query["mode"].ToString();
+    var hasExistingSession = !string.IsNullOrWhiteSpace(Context.Session.GetString("UserId"));
+    var showLogin = hasExistingSession ||
+                    requestedMode.Equals("signin", StringComparison.OrdinalIgnoreCase) ||
+                    !ViewData.ModelState.IsValid;
+    ViewData["Title"] = showLogin ? "Login" : "MTSS | Management of Township and Society System";
     Layout = null;
 }
 
+@if (!showLogin)
+{
+    <partial name="_PublicLanding" />
+}
+else
+{
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MTSS | Login</title>
+    <title>MTSS | Sign In</title>
 
-    <link rel="stylesheet"
-          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mtss-design-system.css" asp-append-version="true" />
 
     <style>
         body {
             min-height: 100vh;
-            background: #f3f5f9;
+            background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.10), transparent 45%),
+                        radial-gradient(circle at bottom left, rgba(15, 23, 42, 0.06), transparent 45%),
+                        var(--mtss-bg);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: Arial, sans-serif;
+            padding: 20px 16px;
         }
 
         .login-card {
             width: 100%;
-            max-width: 420px;
-            background: #fff;
-            padding: 40px;
+            max-width: 430px;
+            background: var(--mtss-surface);
+            padding: 36px 32px;
+            border-radius: 22px;
+            border: 1px solid var(--mtss-border-subtle);
+            box-shadow: var(--mtss-shadow-lg);
+        }
+
+        .login-mark {
+            width: 48px;
+            height: 48px;
             border-radius: 14px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.07);
-        }
-
-        .brand {
-            color: #2563eb;
-            font-size: 28px;
-            font-weight: 700;
-            text-align: center;
-        }
-
-        .subtitle {
-            color: #777;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .form-control {
-            padding: 12px;
-            border-radius: 8px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.25rem;
+            margin: 0 auto 14px;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.30);
         }
 
         .login-btn {
             width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            font-weight: 600;
+            min-height: 46px;
+            border-radius: 12px;
+            font-size: 0.95rem;
         }
 
-            .login-btn:hover {
-                background: #1d4ed8;
-            }
+        .login-return {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin: -8px 0 16px;
+            color: var(--mtss-text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .login-return:hover {
+            color: var(--mtss-primary);
+        }
     </style>
 </head>
-
 <body>
+    <div class="login-card mtss-animate-in">
+        <a class="login-return" href="@Url.Action("Login", "Auth")">
+            <span data-icon="arrowLeft" class="mtss-icon-sm"></span> MTSS home
+        </a>
+        <div class="login-mark">M</div>
+        <h1 class="h4 fw-bold text-center mb-1">Welcome to MTSS</h1>
+        <p class="text-secondary text-center small mb-4">Multi-Tenant Society Suite · Secure Sign In</p>
 
-    <div class="login-card">
-
-        <div class="brand">MTSS</div>
-
-        <p class="subtitle">
-            Multi-Tenant Society Suite
-        </p>
-
-        <h4 class="text-center mb-4">Welcome Back</h4>
-
-        <form asp-controller="Auth"
-              asp-action="Login"
-              method="post">
-
+        <form asp-controller="Auth" asp-action="Login" method="post">
             @Html.AntiForgeryToken()
 
-            <div asp-validation-summary="ModelOnly"
-                 class="text-danger mb-3">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mtss-alert py-2 small"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">Email Address</label>
+                <input asp-for="Email" class="form-control" placeholder="Enter your email" autocomplete="email" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
             </div>
 
             <div class="mb-3">
-                <label asp-for="Email"
-                       class="form-label">Email Address</label>
-
-                <input asp-for="Email"
-                       class="form-control"
-                       placeholder="Enter your email" />
-
-                <span asp-validation-for="Email"
-                      class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Password"
-                       class="form-label">Password</label>
-
-                <input asp-for="Password"
-                       class="form-control"
-                       placeholder="Enter your password" />
-
-                <span asp-validation-for="Password"
-                      class="text-danger"></span>
+                <label asp-for="Password" class="form-label">Password</label>
+                <input asp-for="Password" class="form-control" placeholder="Enter your password" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
             </div>
 
             <div class="form-check mb-4">
-                <input asp-for="RememberMe"
-                       class="form-check-input" />
-
-                <label asp-for="RememberMe"
-                       class="form-check-label">
-                    Remember me
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label small text-secondary">
+                    Keep me signed in on this device
                 </label>
             </div>
 
-            <button type="submit" class="login-btn">
-                Sign In
+            <button type="submit" class="btn btn-primary login-btn">
+                <span data-icon="lock" class="mtss-icon-sm"></span> Sign In
             </button>
-
         </form>
 
-        <p class="text-center text-muted mt-4 mb-0">
+        <p class="text-center text-muted small mt-4 mb-0">
             MTSS Management Portal
         </p>
-
     </div>
 
+    <script src="~/js/mtss-lucide.js" asp-append-version="true"></script>
+    <script src="~/js/mtss-ui.js" asp-append-version="true"></script>
 </body>
 </html>
+}
