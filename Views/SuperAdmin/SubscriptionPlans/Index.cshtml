@@ -1,0 +1,407 @@
+
+@model List<MTSS.UI.Models.ApiModels.SubscriptionPlans.SubscriptionPlanListItem>
+
+    @{
+    ViewData["Title"] = "Subscription Plans";
+    Layout = null;
+
+    var totalPlans = Model?.Count ?? 0;
+    var activePlans = Model?.Count(p => p.IsActive) ?? 0;
+    var inactivePlans = totalPlans - activePlans;
+    }
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>MTSS | Subscription Plans</title>
+
+        <link rel="stylesheet"
+              href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+        <style>
+            body {
+                margin: 0;
+                background: #f4f6fa;
+                font-family: Arial, sans-serif;
+            }
+
+            .sidebar {
+                width: 250px;
+                min-height: 100vh;
+                background: #17243a;
+                color: white;
+                position: fixed;
+                padding: 25px 18px;
+            
+            display: flex;
+            flex-direction: column;
+}
+
+            .brand {
+                font-size: 25px;
+                font-weight: bold;
+                margin-bottom: 40px;
+            }
+
+            .nav-link {
+                color: #cbd5e1;
+                padding: 12px 15px;
+                margin-bottom: 8px;
+                border-radius: 7px;
+            }
+
+                .nav-link.active,
+                .nav-link:hover {
+                    background: #2563eb;
+                    color: white;
+                }
+
+            .main-content {
+                margin-left: 250px;
+                padding: 30px;
+            }
+
+            .content-card {
+                background: white;
+                border: none;
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+            }
+
+            .btn-primary {
+                background: #2563eb;
+                border-color: #2563eb;
+            }
+
+            .search-box {
+                max-width: 350px;
+            }
+
+            .table th {
+                background: #f8fafc;
+                color: #64748b;
+                font-size: 13px;
+                font-weight: 600;
+                padding: 15px;
+                white-space: nowrap;
+            }
+
+            .table td {
+                padding: 17px 15px;
+                vertical-align: middle;
+                white-space: nowrap;
+            }
+
+            .status {
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            .active-status {
+                background: #dcfce7;
+                color: #15803d;
+            }
+
+            .inactive-status {
+                background: #fee2e2;
+                color: #b91c1c;
+            }
+
+            .plan-name {
+                font-weight: 600;
+            }
+
+            .page-title {
+                font-weight: 600;
+            }
+
+            .empty-state {
+                padding: 45px 15px;
+                text-align: center;
+                color: #64748b;
+            }
+
+            @@media (max-width: 768px) {
+                .sidebar {
+                    width: 100%;
+                    min-height: auto;
+                    position: relative;
+                }
+
+                .main-content {
+                    margin-left: 0;
+                    padding: 18px;
+                }
+            }
+        
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .logout-link {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #fca5a5;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .logout-link:hover,
+        .logout-link:focus {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    </style>
+    </head>
+
+    <body>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+
+            <div class="brand">MTSS</div>
+
+            <p class="text-uppercase text-secondary small">
+                Main Menu
+            </p>
+
+            <nav class="nav flex-column">
+
+                <a class="nav-link"
+                   asp-controller="SuperAdmin"
+                   asp-action="Index">
+                    Dashboard
+                </a>
+
+                <a class="nav-link"
+                   href="@Url.Action("Societies", "SuperAdmin")">
+                    Societies
+                </a>
+
+                <a class="nav-link active"
+                   href="@Url.Action("SubscriptionPlans", "SuperAdmin")">
+                    Subscription Plans
+                </a>
+
+                <a class="nav-link" href="#">Payments</a>
+                <a class="nav-link" href="#">Reports</a>
+                <a class="nav-link" href="#">Settings</a>
+
+            </nav>
+
+        
+        <div class="sidebar-bottom">
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="logout-link">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between
+                    align-items-center flex-wrap gap-3 mb-4">
+
+                <div>
+                    <h2 class="page-title">Subscription Plans</h2>
+
+                    <p class="text-secondary mb-0">
+                        Manage subscription plans and their feature limits
+                    </p>
+                </div>
+
+                <a asp-controller="SuperAdmin"
+                   asp-action="CreateSubscriptionPlan"
+                   class="btn btn-primary px-4">
+                    + Create Plan
+                </a>
+
+            </div>
+
+            @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger">
+                @ViewBag.ErrorMessage
+            </div>
+        }
+
+            <!-- Summary Cards -->
+            <div class="row g-4 mb-4">
+
+                <div class="col-md-4">
+                    <div class="content-card">
+                        <p class="text-secondary mb-2">Total Plans</p>
+                        <h3>@totalPlans</h3>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="content-card">
+                        <p class="text-secondary mb-2">Active Plans</p>
+                        <h3>@activePlans</h3>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="content-card">
+                        <p class="text-secondary mb-2">Inactive Plans</p>
+                        <h3>@inactivePlans</h3>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Subscription Plans Table -->
+            <div class="content-card">
+
+                <div class="d-flex justify-content-between
+                        align-items-center flex-wrap gap-3 mb-4">
+
+                    <h5 class="mb-0">All Subscription Plans</h5>
+
+                    <input type="text"
+                           id="planSearch"
+                           class="form-control search-box"
+                           placeholder="Search subscription plans..." />
+
+                </div>
+
+                <div class="table-responsive">
+
+                    @if (Model != null && Model.Any())
+                {
+                    <table class="table table-hover" id="planTable">
+
+                        <thead>
+                            <tr>
+                                <th>Plan ID</th>
+                                <th>Plan Name</th>
+                                <th>Max Wings</th>
+                                <th>Max Floors / Wing</th>
+                                <th>Max Flats</th>
+                                <th>Max Amenities</th>
+                                <th>Max Society Admins</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var plan in Model)
+                            {
+                            <tr>
+                                <td>
+                                    #@plan.SubscriptionPlanId
+                                </td>
+
+                                <td class="plan-name">
+                                    @plan.Name
+                                </td>
+
+                                <td>@plan.MaxWings</td>
+
+                                <td>@plan.MaxFloorsPerWing</td>
+
+                                <td>@plan.MaxFlats</td>
+
+                                <td>@plan.MaxAmenities</td>
+
+                                <td>@plan.MaxSocietyAdmins</td>
+
+                                <td>
+                                    @if (plan.IsActive)
+                                        {
+                                    <span class="status active-status">
+                                        Active
+                                    </span>
+                                        }
+                                        else
+                                        {
+                                    <span class="status inactive-status">
+                                        Inactive
+                                    </span>
+                                        }
+                                </td>
+
+                                <td>
+                                    @plan.CreatedAt.ToString("dd MMM yyyy")
+                                </td>
+
+                                <td>
+                                    <a asp-controller="SuperAdmin"
+                                       asp-action="SubscriptionPlanDetails"
+                                       asp-route-id="@plan.SubscriptionPlanId"
+                                       class="btn btn-sm btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <h5>No Subscription Plans Found</h5>
+
+                        <p class="mb-0">
+                            There are currently no subscription plans to display.
+                        </p>
+                    </div>
+                }
+
+                </div>
+
+            </div>
+
+        </main>
+
+        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            const planSearch = document.getElementById("planSearch");
+
+            if (planSearch) {
+                planSearch.addEventListener("input", function () {
+
+                    const searchValue = this.value.toLowerCase();
+
+                    document.querySelectorAll("#planTable tbody tr")
+                        .forEach(row => {
+                            row.style.display =
+                                row.innerText.toLowerCase()
+                                    .includes(searchValue) ? "" : "none";
+                        });
+                });
+            }
+        </script>
+
+    </body>
+</html>

@@ -1,0 +1,22 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Notifications";
+    ViewData["PageHeading"] = "Notifications";
+    var rows = ViewBag.Rows as List<JsonElement> ?? new();
+    string Val(JsonElement row, string key) => row.ValueKind == JsonValueKind.Object && row.TryGetProperty(key, out var v) ? v.ToString() : "";
+}
+<div class="page-intro"><div><div class="page-eyebrow">UPDATES</div><h1 class="page-title">Notifications</h1><p class="page-subtitle">Stay informed about your society and resident account.</p></div>
+@if (rows.Count > 0) { <form asp-action="MarkAllNotificationsRead" method="post">@Html.AntiForgeryToken()<button class="btn btn-outline-resident" type="submit">Mark all as read</button></form> }</div>
+@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+<div class="resident-card">
+@if (rows.Count == 0) { <div class="empty-state"><div class="empty-icon">♧</div><strong>You're all caught up</strong><p>Notifications will appear here when the backend has updates for you.</p></div> }
+else { <div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Title</th><th>Message</th><th>Type</th><th>Read</th><th>Actions</th></tr></thead><tbody>
+@foreach (var row in rows) {
+    var idText=Val(row,"id"); var title=Val(row,"title"); var message=Val(row,"message"); var type=Val(row,"type"); var isRead=Val(row,"isRead");
+    <tr><td><strong>@(string.IsNullOrWhiteSpace(title) ? "Notification" : title)</strong></td><td>@message</td><td>@(string.IsNullOrWhiteSpace(type) ? "—" : type)</td><td><span class="status-pill @(isRead.Equals("true",StringComparison.OrdinalIgnoreCase) ? "success" : "warning")">@(isRead.Equals("true",StringComparison.OrdinalIgnoreCase) ? "Read" : "Unread")</span></td><td class="d-flex gap-2 align-items-center">
+    @if (int.TryParse(idText,out var id)) { <a class="action-link" asp-action="NotificationDetails" asp-route-id="@id">Open</a>
+        @if (!isRead.Equals("true",StringComparison.OrdinalIgnoreCase)) { <form asp-action="MarkNotificationRead" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@id"/><button class="action-link border-0 bg-transparent" type="submit">Mark read</button></form> }
+    } else { <span class="text-secondary">—</span> }</td></tr>
+}
+</tbody></table></div> }
+</div>

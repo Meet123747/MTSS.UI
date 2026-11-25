@@ -1,0 +1,18 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "My Complaints";
+    ViewData["PageHeading"] = "My complaints";
+    var rows = ViewBag.Rows as List<JsonElement> ?? new();
+    string Val(JsonElement row, string key) => row.ValueKind == JsonValueKind.Object && row.TryGetProperty(key, out var v) ? v.ToString() : "";
+}
+<div class="page-intro"><div><div class="page-eyebrow">SUPPORT CENTER</div><h1 class="page-title">My complaints</h1><p class="page-subtitle">Create a complaint and follow its progress.</p></div><a class="btn btn-resident" asp-action="CreateComplaint">＋ New complaint</a></div>
+@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+<div class="resident-card">
+@if (rows.Count == 0) { <div class="empty-state"><div class="empty-icon">▤</div><strong>No complaints found</strong><p>Your submitted complaints will appear here.</p><a class="btn btn-resident mt-3" asp-action="CreateComplaint">Create your first complaint</a></div> }
+else { <div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Subject</th><th>Status</th><th>Created</th><th>Action</th></tr></thead><tbody>
+@foreach (var row in rows) {
+    var idText = Val(row,"id"); var subject = Val(row,"subject"); var status = Val(row,"status"); var created = Val(row,"createdAt");
+    <tr><td><strong>@(string.IsNullOrWhiteSpace(subject) ? "Complaint" : subject)</strong><div class="text-secondary mt-1">@Val(row,"description")</div></td><td><span class="status-pill @(status.Contains("Resolved",StringComparison.OrdinalIgnoreCase) ? "success" : status.Contains("Progress",StringComparison.OrdinalIgnoreCase) ? "warning" : "")">@(string.IsNullOrWhiteSpace(status) ? "Status unavailable" : status)</span></td><td>@(string.IsNullOrWhiteSpace(created) ? "—" : created)</td><td>@if (int.TryParse(idText,out var id)) { <a class="action-link" asp-action="ComplaintDetails" asp-route-id="@id">View details</a> } else { <span class="text-secondary">—</span> }</td></tr>
+}
+</tbody></table></div> }
+</div>

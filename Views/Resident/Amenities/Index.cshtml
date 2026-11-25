@@ -1,0 +1,20 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Amenity PINs";
+    ViewData["PageHeading"] = "Amenity access";
+    var rows = ViewBag.Rows as List<JsonElement> ?? new();
+    string Val(JsonElement row, string key) => row.ValueKind == JsonValueKind.Object && row.TryGetProperty(key, out var v) ? v.ToString() : "";
+}
+<div class="page-intro"><div><div class="page-eyebrow">COMMUNITY AMENITIES</div><h1 class="page-title">Amenity PINs</h1><p class="page-subtitle">Generate and manage your amenity access PINs.</p></div><a class="btn btn-resident" asp-action="GeneratePin">＋ Generate PIN</a></div>
+@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+<div class="resident-card">
+@if (rows.Count == 0) { <div class="empty-state"><div class="empty-icon">⌁</div><strong>No amenity PINs found</strong><p>Generate a PIN when you need amenity access.</p><a class="btn btn-resident mt-3" asp-action="GeneratePin">Generate a PIN</a></div> }
+else { <div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Amenity</th><th>PIN</th><th>Status</th><th>Generated</th><th>Action</th></tr></thead><tbody>
+@foreach (var row in rows) {
+    var idText=Val(row,"id"); var amenity=Val(row,"amenityName"); var pin=Val(row,"pin"); var status=Val(row,"status"); var generated=Val(row,"generatedAt");
+    <tr><td><strong>@(string.IsNullOrWhiteSpace(amenity) ? "Amenity" : amenity)</strong></td><td><strong>@(string.IsNullOrWhiteSpace(pin) ? "••••" : pin)</strong></td><td><span class="status-pill @(status.Contains("Used",StringComparison.OrdinalIgnoreCase) || status.Contains("Revoked",StringComparison.OrdinalIgnoreCase) ? "danger" : "success")">@(string.IsNullOrWhiteSpace(status) ? "Status unavailable" : status)</span></td><td>@(string.IsNullOrWhiteSpace(generated) ? "—" : generated)</td><td class="d-flex gap-2 align-items-center">
+    @if (int.TryParse(idText,out var id)) { <a class="action-link" asp-action="PinDetails" asp-route-id="@id">Details</a><form asp-action="RevokePin" method="post" onsubmit="return confirm('Revoke this PIN?');">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@id"/><button class="action-link border-0 bg-transparent" type="submit">Revoke</button></form> } else { <span class="text-secondary">—</span> }</td></tr>
+}
+</tbody></table></div> }
+</div>
+<div class="section-note mt-3">PIN validity, single-use rules and access verification are controlled by the backend.</div>

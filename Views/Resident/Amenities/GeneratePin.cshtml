@@ -1,0 +1,14 @@
+@{
+    ViewData["Title"] = "Generate Amenity PIN";
+    ViewData["PageHeading"] = "Generate amenity PIN";
+}
+<div class="page-intro"><div><div class="page-eyebrow">COMMUNITY AMENITIES</div><h1 class="page-title">Generate a PIN</h1><p class="page-subtitle">Enter the amenity ID supplied by your society.</p></div><a class="btn btn-outline-resident" asp-action="Amenities">← Back to PINs</a></div>
+<div class="resident-card resident-card-body resident-form-card">
+    @if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+    <div class="alert alert-info resident-alert">The documented Resident API accepts an <strong>amenityId</strong>. An amenity-list endpoint for Resident accounts is not included in the supplied API manual, so this form asks for the ID rather than displaying invented amenity options.</div>
+    <form asp-action="GeneratePin" method="post">
+        @Html.AntiForgeryToken()
+        <div class="mb-4"><label class="form-label" for="amenityId">Amenity ID</label><input class="form-control" id="amenityId" name="amenityId" type="number" min="1" required value="@ViewBag.AmenityId" placeholder="Enter amenity ID" /></div>
+        <button class="btn btn-resident" type="submit">Generate PIN</button><a class="btn btn-outline-resident ms-2" asp-action="Amenities">Cancel</a>
+    </form>
+</div>

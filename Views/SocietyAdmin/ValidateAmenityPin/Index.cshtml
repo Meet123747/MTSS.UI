@@ -1,0 +1,5 @@
+@{ Layout = "_SocietyAdminLayout"; ViewData["Title"]="Validate Amenity PIN"; }
+<div class="container py-4" style="max-width:700px"><div class="small text-primary fw-semibold text-uppercase">Amenity access</div><h2 class="fw-bold mt-1">Validate amenity PIN</h2><p class="text-secondary">Validate a resident's access PIN against the backend. The backend decides whether the PIN is valid and usable.</p>
+@if(ViewBag.SuccessMessage!=null){<div class="alert alert-success">@ViewBag.SuccessMessage</div>}
+@if(ViewBag.ErrorMessage!=null){<div class="alert alert-danger">@ViewBag.ErrorMessage</div>}
+<div class="card border-0 shadow-sm"><div class="card-body p-4"><form asp-action="ValidateAmenityPin" method="post">@Html.AntiForgeryToken()<div class="mb-3"><label class="form-label fw-semibold">Amenity ID</label><input type="number" min="1" name="amenityId" class="form-control" required/></div><div class="mb-3"><label class="form-label fw-semibold">PIN</label><input type="text" name="pin" class="form-control" required autocomplete="off"/></div><button class="btn btn-primary">Validate PIN</button></form></div></div></div>

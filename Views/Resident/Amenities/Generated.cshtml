@@ -1,0 +1,14 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "PIN Generated";
+    ViewData["PageHeading"] = "PIN generated";
+    JsonElement? data = ViewBag.GeneratedData is JsonElement element ? element : null;
+    string pin = "";
+    if (data.HasValue && data.Value.ValueKind == JsonValueKind.Object && data.Value.TryGetProperty("pin", out var pinProp)) pin = pinProp.ToString();
+}
+<div class="page-intro"><div><div class="page-eyebrow">COMMUNITY AMENITIES</div><h1 class="page-title">Your PIN is ready</h1><p class="page-subtitle">The backend has processed your PIN generation request.</p></div><a class="btn btn-outline-resident" asp-action="Amenities">View my PINs</a></div>
+<div class="resident-card resident-card-body">
+    <div class="pin-highlight mb-4"><div class="pin-label">AMENITY ACCESS PIN</div><div class="pin-code">@(string.IsNullOrWhiteSpace(pin) ? "Generated" : pin)</div><p>Use the PIN according to your society's access process.</p></div>
+    <div class="section-heading mb-2">API response data</div>
+    @if (data.HasValue) { <pre class="json-details mb-0">@JsonSerializer.Serialize(data.Value, new JsonSerializerOptions { WriteIndented = true })</pre> } else { <p class="text-secondary small mb-0">The backend confirmed the action but did not return a data object.</p> }
+</div>

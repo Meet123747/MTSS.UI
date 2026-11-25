@@ -1,0 +1,38 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Resident Dashboard";
+    ViewData["PageHeading"] = "Overview";
+    var recent = ViewBag.RecentNotifications as List<JsonElement> ?? new();
+}
+<div class="page-intro">
+    <div><div class="page-eyebrow">RESIDENT WORKSPACE</div><h1 class="page-title">Welcome back, @(ViewBag.FullName)</h1><p class="page-subtitle">Here is an overview of your resident services.</p></div>
+</div>
+@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+<div class="stat-grid">
+    <div class="resident-card stat-card"><div class="stat-icon">▤</div><div><div class="stat-label">My complaints</div><div class="stat-value">@((int?)ViewBag.ComplaintCount ?? 0)</div><div class="stat-note">Records returned by the complaints API</div></div></div>
+    <div class="resident-card stat-card"><div class="stat-icon">♧</div><div><div class="stat-label">Notifications</div><div class="stat-value">@((int?)ViewBag.NotificationCount ?? 0)</div><div class="stat-note">Records returned by the notifications API</div></div></div>
+    <div class="resident-card stat-card"><div class="stat-icon">⌁</div><div><div class="stat-label">Amenity PINs</div><div class="stat-value">@((int?)ViewBag.PinCount ?? 0)</div><div class="stat-note">Your PIN records from the backend</div></div></div>
+</div>
+<div class="resident-card resident-card-body mb-4">
+    <div class="mb-3"><h2 class="section-heading">Quick access</h2><div class="section-note">Go directly to your resident services</div></div>
+    <div class="quick-grid">
+        <a class="quick-link" asp-action="Complaints"><span class="quick-link-icon">▤</span><span><strong>My complaints</strong><small>Submit and track issues</small></span></a>
+        <a class="quick-link" asp-action="Notifications"><span class="quick-link-icon">♧</span><span><strong>Notifications</strong><small>View community updates</small></span></a>
+        <a class="quick-link" asp-action="Amenities"><span class="quick-link-icon">⌁</span><span><strong>Amenity PINs</strong><small>Manage access PINs</small></span></a>
+    </div>
+</div>
+<div class="resident-card">
+    <div class="resident-card-body d-flex justify-content-between align-items-center"><div><h2 class="section-heading">Recent notifications</h2><div class="section-note">Latest items returned by your notifications API</div></div><a class="action-link" asp-action="Notifications">View all</a></div>
+    @if (ViewBag.NotificationError != null) { <div class="px-4 pb-3 text-danger small">@ViewBag.NotificationError</div> }
+    else if (recent.Count == 0) { <div class="empty-state"><div class="empty-icon">♧</div><strong>No notifications yet</strong><p>New updates will appear here when available.</p></div> }
+    else {
+        <div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Notification</th><th>Details</th><th></th></tr></thead><tbody>
+        @foreach (var row in recent) {
+            var id = row.ValueKind == JsonValueKind.Object && row.TryGetProperty("id", out var idProp) ? idProp.ToString() : "";
+            var title = row.ValueKind == JsonValueKind.Object && row.TryGetProperty("title", out var titleProp) ? titleProp.ToString() : "Notification";
+            var message = row.ValueKind == JsonValueKind.Object && row.TryGetProperty("message", out var msgProp) ? msgProp.ToString() : "Open to view details";
+            <tr><td><strong>@title</strong></td><td>@message</td><td>@if (int.TryParse(id, out var parsedId)) { <a class="action-link" asp-action="NotificationDetails" asp-route-id="@parsedId">Open</a> }</td></tr>
+        }
+        </tbody></table></div>
+    }
+</div>

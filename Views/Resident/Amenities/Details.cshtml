@@ -1,0 +1,16 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Amenity PIN Details";
+    ViewData["PageHeading"] = "Amenity PIN details";
+    var record = ViewBag.Record as JsonElement?;
+}
+<div class="page-intro"><div><div class="page-eyebrow">COMMUNITY AMENITIES</div><h1 class="page-title">Amenity PIN details</h1><p class="page-subtitle">Information returned by the resident amenity PIN API.</p></div><a class="btn btn-outline-resident" asp-action="Amenities">← Back</a></div>
+<div class="resident-card resident-card-body">
+@if (record.HasValue && record.Value.ValueKind == JsonValueKind.Object) {
+    <div class="detail-grid">
+    @foreach (var property in record.Value.EnumerateObject()) {
+        <div class="detail-item"><small>@property.Name</small><strong>@(property.Value.ValueKind == JsonValueKind.Null ? "—" : property.Value.ToString())</strong></div>
+    }
+    </div>
+} else { <div class="empty-state"><strong>No detail data returned</strong></div> }
+</div>

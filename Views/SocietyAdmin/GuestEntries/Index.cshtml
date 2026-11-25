@@ -1,0 +1,35 @@
+@{ Layout = "_SocietyAdminLayout"; }
+@using System.Text.Json
+@{
+    ViewData["Title"] = ViewBag.Title ?? "Society Management";
+    var module = (string)ViewBag.Module;
+    var rows = ViewBag.Rows as List<JsonElement> ?? new();
+    var fields = ViewBag.Fields as string[] ?? Array.Empty<string>();
+    string Value(JsonElement row, string key) => row.ValueKind == JsonValueKind.Object && row.TryGetProperty(key, out var v) ? (v.ValueKind == JsonValueKind.Null ? "—" : v.ToString()) : "—";
+}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div><div class="text-uppercase small text-primary fw-semibold">Society administration</div><h2 class="fw-bold mb-1">@ViewBag.Title</h2><div class="text-secondary">Manage records for your society.</div></div>
+        @if (fields.Length > 0) { <a class="btn btn-primary" asp-action="Create" asp-route-module="@module"><i class="bi bi-plus-lg me-1"></i> Add @ViewBag.Title</a> }
+    </div>
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+    @if (ViewBag.ErrorMessage != null) { <div class="alert alert-warning">@ViewBag.ErrorMessage</div> }
+    <div class="card border-0 shadow-sm"><div class="card-body">
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-3"><h5 class="mb-0">Records <span class="badge text-bg-light">@rows.Count</span></h5><input id="tableSearch" class="form-control" style="max-width:280px" placeholder="Search records..." /></div>
+        @if (rows.Count == 0) { <div class="text-center py-5 text-secondary"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No records found. Create your first record if this module supports creation.</div> }
+        else {
+        <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Record</th>@foreach(var f in fields){<th>@f</th>}<th>Status</th><th class="text-end">Actions</th></tr></thead><tbody id="dataRows">
+        @foreach(var row in rows){var id = new[] {"id","wingId","floorId","flatId","residentProfileId","amenityId","guestEntryId","guestEntryRequestId","parcelId","complaintId","notificationId","amenityAccessLogId"}.Select(k => Value(row,k)).FirstOrDefault(v => v != "—") ?? "—";
+        <tr><td class="fw-semibold">#@id</td>@foreach(var f in fields){<td>@Value(row,f)</td>}<td><span class="badge rounded-pill text-bg-light">@Value(row,"status")</span></td><td class="text-end">
+        @if (module == "residents") { <form asp-action="CreateResidentAccount" method="post" class="d-flex gap-1 mb-1">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@id"/><input name="email" type="email" class="form-control form-control-sm" placeholder="Login email" required style="max-width:150px"/><input name="password" type="password" class="form-control form-control-sm" placeholder="Temp password" required style="max-width:130px"/><button class="btn btn-sm btn-outline-success">Create login</button></form> }
+        @if(fields.Length > 0 && module != "complaints") { <a asp-action="Edit" asp-route-module="@module" asp-route-id="@id" class="btn btn-sm btn-outline-primary">Edit</a> }
+        @if (module == "complaints") { <form asp-action="UpdateStatus" method="post" class="d-inline-flex gap-1">@Html.AntiForgeryToken()<input type="hidden" name="module" value="@module"/><input type="hidden" name="id" value="@id"/><select name="status" class="form-select form-select-sm"><option>Open</option><option>InProgress</option><option>Resolved</option></select><input name="adminRemarks" class="form-control form-control-sm" placeholder="Admin remarks" style="max-width:140px"/><button class="btn btn-sm btn-outline-primary">Update</button></form> }
+        else if (module == "guests" || module == "parcels") { <form asp-action="UpdateStatus" method="post" class="d-inline-flex gap-1">@Html.AntiForgeryToken()<input type="hidden" name="module" value="@module"/><input type="hidden" name="id" value="@id"/><select name="status" class="form-select form-select-sm"><option>Approved</option><option>Rejected</option><option>Collected</option></select><button class="btn btn-sm btn-outline-primary">Update</button></form> }
+        else if (fields.Length > 0) { <form asp-action="UpdateStatus" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="module" value="@module"/><input type="hidden" name="id" value="@id"/><input type="hidden" name="isActive" value="@(Value(row,"isActive").Equals("True",StringComparison.OrdinalIgnoreCase) ? "false" : "true")"/><button class="btn btn-sm btn-outline-secondary">@(Value(row,"isActive").Equals("True",StringComparison.OrdinalIgnoreCase) ? "Deactivate" : "Activate")</button></form> }
+        </td></tr>}
+        </tbody></table></div> }
+    </div></div>
+    @if (!string.IsNullOrWhiteSpace(module) && new[]{"residents","guests","parcels","complaints","amenity-logs"}.Contains(module)) { <div class="mt-3"><a asp-action="Report" asp-route-module="@module" class="btn btn-outline-secondary">Open @ViewBag.Title report</a></div> }
+</div>
+@section Scripts { <script>document.getElementById('tableSearch')?.addEventListener('input',e=>{const q=e.target.value.toLowerCase();document.querySelectorAll('#dataRows tr').forEach(r=>r.hidden=!r.innerText.toLowerCase().includes(q));});</script> }

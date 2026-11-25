@@ -1,0 +1,413 @@
+
+@model MTSS.UI.Models.ApiModels.SubscriptionPlans.SubscriptionPlanCreateRequest
+
+@{
+    ViewData["Title"] = "Create Subscription Plan";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>MTSS | Create Subscription Plan</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        body {
+            margin: 0;
+            background: #f4f6fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #17243a;
+            color: white;
+            position: fixed;
+            padding: 25px 18px;
+        
+            display: flex;
+            flex-direction: column;
+}
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 7px;
+        }
+
+            .nav-link.active,
+            .nav-link:hover {
+                background: #2563eb;
+                color: white;
+            }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .content-card {
+            background: white;
+            border: none;
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+        }
+
+        .page-title {
+            font-weight: 600;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .form-control {
+            padding: 10px 12px;
+        }
+
+        .section-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #17243a;
+            margin-bottom: 20px;
+        }
+
+        .feature-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+            height: 100%;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 18px;
+            }
+        }
+    
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .logout-link {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #fca5a5;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .logout-link:hover,
+        .logout-link:focus {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+        <div class="brand">MTSS</div>
+
+        <p class="text-uppercase text-secondary small">
+            Main Menu
+        </p>
+
+        <nav class="nav flex-column">
+
+            <a class="nav-link"
+               asp-controller="SuperAdmin"
+               asp-action="Index">
+                Dashboard
+            </a>
+
+            <a class="nav-link"
+               href="@Url.Action("Societies", "SuperAdmin")">
+                Societies
+            </a>
+
+            <a class="nav-link active"
+               href="@Url.Action("SubscriptionPlans", "SuperAdmin")">
+                Subscription Plans
+            </a>
+
+            <a class="nav-link" href="#">Payments</a>
+            <a class="nav-link" href="#">Reports</a>
+            <a class="nav-link" href="#">Settings</a>
+
+        </nav>
+
+    
+        <div class="sidebar-bottom">
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="logout-link">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <div class="mb-4">
+
+            <a asp-controller="SuperAdmin"
+               asp-action="SubscriptionPlans"
+               class="text-decoration-none">
+                ? Back to Subscription Plans
+            </a>
+
+            <h2 class="page-title mt-3">Create Subscription Plan</h2>
+
+            <p class="text-secondary mb-0">
+                Configure plan limits and available features.
+            </p>
+
+        </div>
+
+        <div class="content-card">
+
+            <form asp-controller="SuperAdmin"
+                  asp-action="CreateSubscriptionPlan"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <!-- Basic Information -->
+                <h5 class="section-title">Basic Information</h5>
+
+                <div class="row mb-4">
+
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label">
+                            Plan Name
+                        </label>
+
+                        <input asp-for="Name"
+                               class="form-control"
+                               placeholder="Enter plan name"
+                               required />
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- Plan Limits -->
+                <h5 class="section-title">Plan Limits</h5>
+
+                <div class="row g-3 mb-4">
+
+                    <div class="col-md-4">
+                        <label asp-for="MaxWings" class="form-label">
+                            Maximum Wings
+                        </label>
+
+                        <input asp-for="MaxWings"
+                               type="number"
+                               min="1"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="MaxFloorsPerWing" class="form-label">
+                            Maximum Floors Per Wing
+                        </label>
+
+                        <input asp-for="MaxFloorsPerWing"
+                               type="number"
+                               min="1"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="MaxFlats" class="form-label">
+                            Maximum Flats
+                        </label>
+
+                        <input asp-for="MaxFlats"
+                               type="number"
+                               min="1"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="MaxAmenities" class="form-label">
+                            Maximum Amenities
+                        </label>
+
+                        <input asp-for="MaxAmenities"
+                               type="number"
+                               min="1"
+                               class="form-control"
+                               required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="MaxSocietyAdmins" class="form-label">
+                            Maximum Society Admins
+                        </label>
+
+                        <input asp-for="MaxSocietyAdmins"
+                               type="number"
+                               min="1"
+                               class="form-control"
+                               required />
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- Features -->
+                <h5 class="section-title">Available Features</h5>
+
+                <div class="row g-3 mb-4">
+
+                    <div class="col-md-6">
+                        <div class="feature-item">
+                            <div class="form-check">
+                                <input asp-for="GuestApprovalEnabled"
+                                       class="form-check-input" />
+
+                                <label asp-for="GuestApprovalEnabled"
+                                       class="form-check-label">
+                                    Guest Approval
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="feature-item">
+                            <div class="form-check">
+                                <input asp-for="ParcelRegisterEnabled"
+                                       class="form-check-input" />
+
+                                <label asp-for="ParcelRegisterEnabled"
+                                       class="form-check-label">
+                                    Parcel Register
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="feature-item">
+                            <div class="form-check">
+                                <input asp-for="AmenityPinEnabled"
+                                       class="form-check-input" />
+
+                                <label asp-for="AmenityPinEnabled"
+                                       class="form-check-label">
+                                    Amenity PIN
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="feature-item">
+                            <div class="form-check">
+                                <input asp-for="ComplaintManagementEnabled"
+                                       class="form-check-input" />
+
+                                <label asp-for="ComplaintManagementEnabled"
+                                       class="form-check-label">
+                                    Complaint Management
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="feature-item">
+                            <div class="form-check">
+                                <input asp-for="ReportsEnabled"
+                                       class="form-check-input" />
+
+                                <label asp-for="ReportsEnabled"
+                                       class="form-check-label">
+                                    Reports
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex gap-2 justify-content-end">
+
+                    <a asp-controller="SuperAdmin"
+                       asp-action="SubscriptionPlans"
+                       class="btn btn-outline-secondary px-4">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-primary px-4">
+                        Create Plan
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

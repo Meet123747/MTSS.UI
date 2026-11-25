@@ -1,0 +1,8 @@
+@{ Layout = "_SocietyAdminLayout"; }
+@using System.Text.Json
+@{ ViewData["Title"] = ViewBag.Title; var rows = ViewBag.Rows as List<JsonElement> ?? new(); }
+<div class="container-fluid py-4"><a asp-action="Index" asp-route-module="@ViewBag.Module" class="text-decoration-none">← Back</a><h2 class="fw-bold mt-3">@ViewBag.Title</h2><p class="text-secondary">Live report data returned by the MTSS backend.</p>
+@if(ViewBag.ErrorMessage != null){<div class="alert alert-warning">@ViewBag.ErrorMessage</div>}
+<div class="card border-0 shadow-sm"><div class="card-body"><div class="d-flex justify-content-between mb-3"><strong>Report records</strong><span class="badge text-bg-light">@rows.Count</span></div>
+@if(rows.Count==0){<div class="text-center py-5 text-secondary">No report data is available.</div>}else{<div class="table-responsive"><table class="table table-striped"><thead><tr>@foreach(var p in rows[0].EnumerateObject()){<th>@p.Name</th>}</tr></thead><tbody>@foreach(var row in rows){<tr>@foreach(var p in row.EnumerateObject()){<td>@p.Value.ToString()</td>}</tr>}</tbody></table></div>}
+</div></div></div>

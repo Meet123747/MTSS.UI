@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "New Complaint";
+    ViewData["PageHeading"] = "New complaint";
+}
+<div class="page-intro"><div><div class="page-eyebrow">SUPPORT CENTER</div><h1 class="page-title">Submit a complaint</h1><p class="page-subtitle">Describe the issue so your society team can review it.</p></div><a class="btn btn-outline-resident" asp-action="Complaints">← Back to complaints</a></div>
+<div class="resident-card resident-card-body resident-form-card">
+    @if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
+    <form asp-action="CreateComplaint" method="post">
+        @Html.AntiForgeryToken()
+        <div class="mb-3"><label class="form-label" for="subject">Subject</label><input class="form-control" id="subject" name="subject" maxlength="200" required value="@ViewBag.Subject" placeholder="e.g. Water leakage in kitchen" /></div>
+        <div class="mb-4"><label class="form-label" for="description">Description</label><textarea class="form-control" id="description" name="description" rows="6" required placeholder="Describe the issue in detail...">@ViewBag.Description</textarea><div class="form-text">Please include the location and any useful details.</div></div>
+        <button class="btn btn-resident" type="submit">Submit complaint</button>
+        <a class="btn btn-outline-resident ms-2" asp-action="Complaints">Cancel</a>
+    </form>
+</div>

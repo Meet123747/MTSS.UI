@@ -1,0 +1,521 @@
+
+@{
+    ViewData["Title"] = "SuperAdmin Dashboard";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>MTSS | SuperAdmin Dashboard</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        body {
+            margin: 0;
+            background: #f4f6fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #17243a;
+            color: white;
+            position: fixed;
+            padding: 25px 18px;
+        
+            display: flex;
+            flex-direction: column;
+}
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 7px;
+        }
+
+            .nav-link.active,
+            .nav-link:hover {
+                background: #2563eb;
+                color: white;
+            }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .content-card {
+            background: white;
+            border: none;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+            height: 100%;
+        }
+
+        .page-title {
+            font-weight: 600;
+        }
+
+        .summary-label {
+            color: #64748b;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .summary-value {
+            font-size: 30px;
+            font-weight: 600;
+            color: #17243a;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #17243a;
+            margin-bottom: 20px;
+        }
+
+        .quick-link {
+            display: block;
+            padding: 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            text-decoration: none;
+            color: #17243a;
+            transition: 0.2s;
+        }
+
+            .quick-link:hover {
+                border-color: #2563eb;
+                background: #f8fafc;
+                color: #2563eb;
+            }
+
+            .quick-link h6 {
+                font-weight: 600;
+                margin-bottom: 7px;
+            }
+
+            .quick-link p {
+                color: #64748b;
+                font-size: 13px;
+                margin: 0;
+            }
+
+        .welcome-card {
+            background: #2563eb;
+            color: white;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 25px;
+        }
+
+            .welcome-card p {
+                margin-bottom: 0;
+                color: #dbeafe;
+            }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 18px;
+            }
+        }
+    
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .logout-link {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #fca5a5;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .logout-link:hover,
+        .logout-link:focus {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+        <div class="brand">MTSS</div>
+
+        <p class="text-uppercase text-secondary small">
+            Main Menu
+        </p>
+
+        <nav class="nav flex-column">
+
+            <a class="nav-link active"
+               href="@Url.Action("Index", "SuperAdmin")">
+                Dashboard
+            </a>
+
+            <a class="nav-link"
+               href="@Url.Action("Societies", "SuperAdmin")">
+                Societies
+            </a>
+
+            <a class="nav-link"
+               href="@Url.Action("SubscriptionPlans", "SuperAdmin")">
+                Subscription Plans
+            </a>
+
+            <a class="nav-link"
+               href="@Url.Action("SocietySubscriptions", "SuperAdmin")">
+                Society Subscriptions
+            </a>
+
+            <a class="nav-link"
+               href="@Url.Action("Payments", "SuperAdmin")">
+                Payments
+            </a>
+
+            <a class="nav-link"
+               href="@Url.Action("Reports", "SuperAdmin")">
+                Reports
+            </a>
+
+            <a class="nav-link" href="#">
+                Settings
+            </a>
+
+        </nav>
+
+    
+        <div class="sidebar-bottom">
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="logout-link">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Page Header -->
+        <div class="mb-4">
+
+            <h2 class="page-title">SuperAdmin Dashboard</h2>
+
+            <p class="text-secondary mb-0">
+                Overview of your MTSS platform and management activities.
+            </p>
+
+        </div>
+
+        <!-- Welcome Section -->
+        <div class="welcome-card">
+
+            <h4 class="mb-2">Welcome to MTSS!</h4>
+
+            <p>
+                Manage societies, subscription plans and platform operations
+                from one central dashboard.
+            </p>
+
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row g-4 mb-4">
+
+            <div class="col-md-6 col-xl-3">
+                <div class="content-card">
+                    <p class="summary-label">Total Societies</p>
+                    <h3 class="summary-value">@ViewBag.TotalSocieties</h3>
+                    <small class="text-secondary">
+                        Registered societies
+                    </small>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="content-card">
+                    <p class="summary-label">Active Societies</p>
+                    <h3 class="summary-value">@ViewBag.ActiveSocieties</h3>
+                    <small class="text-secondary">
+                        Currently active
+                    </small>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="content-card">
+                    <p class="summary-label">Total Subscription Plans</p>
+                    <h3 class="summary-value">@ViewBag.TotalPlans</h3>
+                    <small class="text-secondary">
+                        Available plans
+                    </small>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <div class="content-card">
+                    <p class="summary-label">Active Subscription Plans</p>
+                    <h3 class="summary-value">@ViewBag.ActivePlans</h3>
+                    <small class="text-secondary">
+                        Currently active
+                    </small>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Quick Management -->
+        <div class="content-card mb-4">
+
+            <h5 class="section-title">Quick Management</h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-6 col-xl-4">
+                    <a class="quick-link"
+                       href="@Url.Action("Societies", "SuperAdmin")">
+
+                        <h6>Society Management →</h6>
+
+                        <p>
+                            Create, view, update and manage societies.
+                        </p>
+
+                    </a>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <a class="quick-link"
+                       href="@Url.Action("SubscriptionPlans", "SuperAdmin")">
+
+                        <h6>Subscription Plans →</h6>
+
+                        <p>
+                            Manage subscription plans and feature limits.
+                        </p>
+
+                    </a>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <a class="quick-link"
+                       href="@Url.Action("Payments", "SuperAdmin")">
+
+                        <h6>Payments →</h6>
+
+                        <p>
+                            Monitor society subscription payments.
+                        </p>
+
+                    </a>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <a class="quick-link"
+                       href="@Url.Action("Reports", "SuperAdmin")">
+
+                        <h6>Reports →</h6>
+
+                        <p>
+                            View platform reports and statistics.
+                        </p>
+
+                    </a>
+                </div>
+
+                <div class="col-md-6 col-xl-4">
+                    <a class="quick-link" href="#">
+
+                        <h6>Settings →</h6>
+
+                        <p>
+                            Manage platform configuration.
+                        </p>
+
+
+                    </a>
+                </div>
+                
+
+            </div>
+
+        </div>
+
+        <!-- Platform Information -->
+        <div class="content-card">
+
+            <h5 class="section-title">Platform Information</h5>
+
+            <div class="row">
+
+                <div class="col-md-6 mb-3">
+                    <p class="text-secondary mb-1">Platform Name</p>
+                    <h6>MTSS - Management System</h6>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <p class="text-secondary mb-1">User Role</p>
+                    <h6>Super Administrator</h6>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <p class="text-secondary mb-1">Platform Status</p>
+                    <span class="badge bg-success">Operational</span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <p class="text-secondary mb-1">Application Version</p>
+                    <h6>MTSS UI - .NET 8</h6>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Recent Society Registrations -->
+        <div class="content-card mb-4">
+
+            <div class="d-flex justify-content-between
+                align-items-center flex-wrap gap-3 mb-4">
+
+                <h5 class="section-title mb-0">
+                    Recent Society Registrations
+                </h5>
+
+                <a href="@Url.Action("Societies", "SuperAdmin")"
+                   class="btn btn-outline-primary btn-sm">
+                    View All Societies
+                </a>
+
+            </div>
+
+            @{
+                var recentSocieties =
+                    ViewBag.RecentSocieties as
+                    List<MTSS.UI.Models.ApiModels.Societies.SocietyListItem>
+                    ?? new List<MTSS.UI.Models.ApiModels.Societies.SocietyListItem>();
+            }
+
+            <div class="table-responsive">
+
+                <table class="table table-hover">
+
+                    <thead>
+                        <tr>
+                            <th>Society Name</th>
+                            <th>City</th>
+                            <th>Registration Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @if (recentSocieties.Any())
+                        {
+                        @foreach (var society in recentSocieties)
+                            {
+                        <tr>
+                            <td>
+                                <strong>@society.Name</strong>
+                            </td>
+
+                            <td>@society.City</td>
+
+                            <td>
+                                @society.CreatedAt.ToString("dd MMM yyyy")
+                            </td>
+
+                            <td>
+                                @if (society.IsActive)
+                                        {
+                                <span class="status active-status">
+                                    Active
+                                </span>
+                                        }
+                                        else
+                                        {
+                                <span class="status inactive-status">
+                                    Inactive
+                                </span>
+                                        }
+                            </td>
+
+                            <td>
+                                <a href="@Url.Action(
+                                            "SocietyDetails",
+                                            "SuperAdmin",
+                                            new { id = society.SocietyId })"
+                                   class="btn btn-sm btn-outline-primary">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                            }
+                        }
+                        else
+                        {
+                        <tr>
+                            <td colspan="5"
+                                class="text-center text-secondary py-4">
+                                No society registrations found.
+                            </td>
+                        </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

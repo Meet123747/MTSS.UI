@@ -1,0 +1,362 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Payments";
+    var payments = new[]
+    {
+        new { Id = "TXN-DEMO-1001", Society = "Green Valley Residency", Plan = "MTSS Basic", Amount = 4999m, Date = "18 Nov 2026", Method = "Online", Status = "Paid" },
+        new { Id = "TXN-DEMO-1002", Society = "M»…T MR€G", Plan = "Home", Amount = 2999m, Date = "24 Nov 2026", Method = "Online", Status = "Pending" },
+        new { Id = "TXN-DEMO-1003", Society = "Sample Heights", Plan = "MTSS Basic", Amount = 4999m, Date = "12 Nov 2026", Method = "Bank Transfer", Status = "Failed" },
+        new { Id = "TXN-DEMO-1004", Society = "Sunrise Residency", Plan = "Home", Amount = 2999m, Date = "05 Nov 2026", Method = "Online", Status = "Paid" }
+    };
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payments | MTSS SuperAdmin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f4f6fa;
+            font-family: Arial, sans-serif;
+            color: #17243a;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #17243a;
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 25px 15px;
+        
+            display: flex;
+            flex-direction: column;
+}
+
+        .brand {
+            font-size: 25px;
+            font-weight: 700;
+            margin: 0 0 45px;
+        }
+
+        .menu-label {
+            color: #8492a8;
+            font-size: 12px;
+            margin: 0 0 15px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #e8edf5;
+            text-decoration: none;
+            padding: 13px 15px;
+            border-radius: 8px;
+            margin-bottom: 7px;
+        }
+
+            .sidebar a:hover, .sidebar a.active {
+                background: #3563e9;
+                color: white;
+            }
+
+        .main {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .page-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+            .page-heading h2 {
+                margin: 0 0 5px;
+                color: #17243a;
+            }
+
+        .muted {
+            color: #718096;
+        }
+
+        .stat-card, .content-card {
+            background: white;
+            border-radius: 12px;
+            padding: 22px 24px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.04);
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            font-size: 27px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+
+        .table thead th {
+            background: #f7f9fc;
+            color: #52627a;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            border-bottom: 1px solid #d5dce7;
+            padding: 14px;
+        }
+
+        .table tbody td {
+            padding: 15px 14px;
+            vertical-align: middle;
+        }
+
+        .status {
+            display: inline-block;
+            border-radius: 20px;
+            padding: 5px 11px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .paid {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .pending {
+            background: #fef3c7;
+            color: #a16207;
+        }
+
+        .failed {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .demo-note {
+            background: #fff8e7;
+            border: 1px solid #f5d58b;
+            color: #805b13;
+            border-radius: 9px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+            .toolbar input, .toolbar select {
+                min-width: 190px;
+                max-width: 260px;
+                border: 1px solid #d7deea;
+                border-radius: 7px;
+                padding: 9px 12px;
+            }
+
+        .btn-primary {
+            background: #3563e9;
+            border-color: #3563e9;
+        }
+
+        @@media(max-width:800px) {
+            .sidebar {
+                width: 200px;
+            }
+
+            .main {
+                margin-left: 200px;
+                padding: 20px;
+            }
+        }
+
+        @@media(max-width:600px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+                min-height: auto;
+            }
+
+            .brand {
+                margin-bottom: 20px;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 18px;
+            }
+
+            .page-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .logout-link {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #fca5a5;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .logout-link:hover,
+        .logout-link:focus {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">MTSS</div>
+        <div class="menu-label">MAIN MENU</div>
+        <a href="@Url.Action("Index", "SuperAdmin")">Dashboard</a>
+        <a href="@Url.Action("Societies", "SuperAdmin")">Societies</a>
+        <a href="@Url.Action("SubscriptionPlans", "SuperAdmin")">Subscription Plans</a>
+        <a href="@Url.Action("SocietySubscriptions", "SuperAdmin")">Society Subscriptions</a>
+        <a class="active" href="@Url.Action("Payments", "SuperAdmin")">Payments</a>
+        <a href="@Url.Action("Reports", "SuperAdmin")">Reports</a>
+        <a href="#">Settings</a>
+    
+        <div class="sidebar-bottom">
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="logout-link">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <main class="main">
+        <div class="page-heading">
+            <div>
+                <h2>Payments</h2>
+                <div class="muted">View and monitor society subscription payment activity.</div>
+            </div>
+            <button class="btn btn-primary" type="button" onclick="exportPayments()">Export CSV</button>
+        </div>
+
+        <div class="demo-note">
+            <strong>Demo view:</strong> These are sample records for UI development only. They are not real transactions and are not retrieved from the backend. Payment API integration will be added when JD provides the endpoint contract.
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-md-6"><div class="stat-card"><div class="stat-label">Total Transactions (Sample)</div><div class="stat-value" id="totalCount">4</div></div></div>
+            <div class="col-xl-3 col-md-6"><div class="stat-card"><div class="stat-label">Paid Amount (Sample)</div><div class="stat-value text-success" id="paidAmount">?7,998</div></div></div>
+            <div class="col-xl-3 col-md-6"><div class="stat-card"><div class="stat-label">Pending Transactions</div><div class="stat-value text-warning" id="pendingCount">1</div></div></div>
+            <div class="col-xl-3 col-md-6"><div class="stat-card"><div class="stat-label">Failed Transactions</div><div class="stat-value text-danger" id="failedCount">1</div></div></div>
+        </div>
+
+        <section class="content-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 class="mb-0 fw-bold">Transaction History</h5>
+                <span class="muted small">Sample transaction data</span>
+            </div>
+            <div class="toolbar">
+                <input type="text" id="searchInput" placeholder="Search transaction or society..." oninput="filterPayments()" />
+                <select id="statusFilter" onchange="filterPayments()">
+                    <option value="">All Statuses</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Failed">Failed</option>
+                </select>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" id="paymentsTable">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Society</th>
+                            <th>Subscription Plan</th>
+                            <th>Amount</th>
+                            <th>Payment Date</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var payment in payments)
+                    {
+                        var statusClass = payment.Status == "Paid" ? "paid" : payment.Status == "Pending" ? "pending" : "failed";
+                        <tr data-status="@payment.Status">
+                            <td class="fw-semibold">@payment.Id</td>
+                            <td>@payment.Society</td>
+                            <td>@payment.Plan</td>
+                            <td>?@payment.Amount.ToString("N0")</td>
+                            <td>@payment.Date</td>
+                            <td>@payment.Method</td>
+                            <td><span class="status @statusClass">@payment.Status</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div id="emptyMessage" class="text-center text-muted py-4" style="display:none;">No matching transactions found.</div>
+        </section>
+    </main>
+
+    <script>function filterPayments() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const rows = document.querySelectorAll('#paymentsTable tbody tr');
+            let visible = 0;
+
+            rows.forEach(row => {
+                const matchesText = row.innerText.toLowerCase().includes(query);
+                const matchesStatus = !status || row.dataset.status === status;
+                const show = matchesText && matchesStatus;
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            document.getElementById('emptyMessage').style.display = visible ? 'none' : 'block';
+        }
+
+        function exportPayments() {
+            const rows = [...document.querySelectorAll('#paymentsTable tr')].filter(row => row.style.display !== 'none');
+            const csv = rows.map(row => [...row.querySelectorAll('th,td')]
+                .map(cell => '"' + cell.innerText.replace(/"/g, '""') + '"').join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'mtss-sample-payments.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+        }</script>
+</body>
+</html>

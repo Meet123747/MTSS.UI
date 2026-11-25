@@ -1,0 +1,261 @@
+
+@model MTSS.UI.Models.ApiModels.Societies.SocietyCreateRequest
+
+@{
+    Layout = null;
+    ViewData["Title"] = "Edit Society";
+    var societyId = (int)ViewBag.SocietyId;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>MTSS | Edit Society</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        body {
+            background: #f4f6fa;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #17243a;
+            color: white;
+            position: fixed;
+            padding: 25px 18px;
+        
+            display: flex;
+            flex-direction: column;
+}
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 7px;
+        }
+
+            .nav-link:hover,
+            .nav-link.active {
+                background: #2563eb;
+                color: white;
+            }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 35px;
+        }
+
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+            max-width: 900px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .form-control {
+            padding: 11px;
+            border-radius: 7px;
+        }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 18px;
+            }
+        }
+    
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .logout-link {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #fca5a5;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .logout-link:hover,
+        .logout-link:focus {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">MTSS</div>
+
+        <p class="text-uppercase text-secondary small">
+            Main Menu
+        </p>
+
+        <nav class="nav flex-column">
+            <a class="nav-link"
+               asp-controller="SuperAdmin"
+               asp-action="Index">
+                Dashboard
+            </a>
+
+            <a class="nav-link active"
+               asp-controller="SuperAdmin"
+               asp-action="Societies">
+                Societies
+            </a>
+
+            <a class="nav-link" href="#">Subscription Plans</a>
+            <a class="nav-link" href="#">Payments</a>
+            <a class="nav-link" href="#">Reports</a>
+            <a class="nav-link" href="#">Settings</a>
+        </nav>
+    
+        <div class="sidebar-bottom">
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="logout-link">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <main class="main-content">
+
+        <div class="mb-4">
+            <h2 class="fw-semibold">Edit Society</h2>
+            <p class="text-secondary">
+                Update the registered society information
+            </p>
+        </div>
+
+        <div class="form-card">
+
+            <h4 class="mb-4">Society Information</h4>
+
+            @if (ViewBag.ErrorMessage != null)
+            {
+            <div class="alert alert-danger">
+                @ViewBag.ErrorMessage
+            </div>
+            }
+
+            <form asp-controller="SuperAdmin"
+                  asp-action="EditSociety"
+                  asp-route-id="@societyId"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="id" value="@societyId" />
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Society Name</label>
+                        <input asp-for="Name"
+                               class="form-control"
+                               placeholder="Enter society name"
+                               required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Address</label>
+                        <input asp-for="Address"
+                               class="form-control"
+                               placeholder="Enter address"
+                               required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">City</label>
+                        <input asp-for="City"
+                               class="form-control"
+                               placeholder="Enter city"
+                               required />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">State</label>
+                        <input asp-for="State"
+                               class="form-control"
+                               placeholder="Enter state"
+                               required />
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label">Pincode</label>
+                        <input asp-for="Pincode"
+                               class="form-control"
+                               placeholder="Enter pincode"
+                               required />
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <div class="d-flex gap-2 justify-content-end">
+
+                    <a asp-controller="SuperAdmin"
+                       asp-action="SocietyDetails"
+                       asp-route-id="@societyId"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </main>
+
+</body>
+</html>

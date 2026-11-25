@@ -1,0 +1,445 @@
+
+@using MTSS.UI.Models.ApiModels.Societies
+@using MTSS.UI.Models.ApiModels.SubscriptionPlans
+@{
+    ViewData["Title"] = "Reports";
+    Layout = null;
+
+    var societies = ViewBag.Societies as List<SocietyListItem>
+        ?? new List<SocietyListItem>();
+
+    var plans = ViewBag.Plans as List<SubscriptionPlanListItem>
+        ?? new List<SubscriptionPlanListItem>();
+
+    var recentSocieties = ViewBag.RecentSocieties as List<SocietyListItem>
+        ?? societies.OrderByDescending(s => s.CreatedAt).Take(10).ToList();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MTSS | Reports</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        body {
+            margin: 0;
+            background: #f4f6fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #17243a;
+            color: white;
+            position: fixed;
+            padding: 25px 18px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 7px;
+            text-decoration: none;
+        }
+
+            .nav-link.active, .nav-link:hover {
+                background: #2563eb;
+                color: white;
+            }
+
+        .logout-link {
+            color: #fca5a5;
+            cursor: pointer;
+        }
+
+            .logout-link:hover {
+                background: #dc2626;
+                color: white;
+            }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .content-card, .stat-card {
+            background: white;
+            border: 0;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.04);
+        }
+
+        .stat-card {
+            height: 100%;
+            padding: 20px;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            color: #17243a;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .table th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .table td, .table th {
+            padding: 14px;
+            vertical-align: middle;
+        }
+
+        .status {
+            padding: 6px 11px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .active-status {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .inactive-status {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .section-title {
+            font-weight: 600;
+            color: #17243a;
+        }
+
+        @@media(max-width:768px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+            }
+
+            .sidebar-bottom {
+                margin-top: 15px;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 18px;
+            }
+        }
+    
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .logout-link {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #fca5a5;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .logout-link:hover,
+        .logout-link:focus {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">MTSS</div>
+        <p class="text-uppercase text-secondary small">Main Menu</p>
+
+        <nav class="nav flex-column">
+            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Index">Dashboard</a>
+            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Societies">Societies</a>
+            <a class="nav-link" asp-controller="SuperAdmin" asp-action="SubscriptionPlans">Subscription Plans</a>
+            <a class="nav-link" asp-controller="SuperAdmin" asp-action="SocietySubscriptions">Society Subscriptions</a>
+            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Payments">Payments</a>
+            <a class="nav-link active" asp-controller="SuperAdmin" asp-action="Reports">Reports</a>
+            <a class="nav-link" asp-controller="SuperAdmin" asp-action="Settings">Settings</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+        </div>
+    
+        <div class="sidebar-bottom">
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="logout-link">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <main class="main-content">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <div>
+                <h2 class="fw-semibold mb-1">Reports &amp; Analytics</h2>
+                <p class="text-secondary mb-0">
+                    Platform overview based on current society and subscription plan records.
+                </p>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="exportReports()">
+                Export CSV
+            </button>
+        </div>
+
+        @if (ViewBag.ErrorMessage != null)
+        {
+        <div class="alert alert-warning">@ViewBag.ErrorMessage</div>
+        }
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="stat-label">Total Societies</div>
+                    <div class="stat-value">@((ViewBag.TotalSocieties ?? societies.Count))</div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="stat-label">Active Societies</div>
+                    <div class="stat-value text-success">
+                        @((ViewBag.ActiveSocieties ?? societies.Count(s => s.IsActive)))
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="stat-label">Inactive Societies</div>
+                    <div class="stat-value text-danger">
+                        @((ViewBag.InactiveSocieties ?? societies.Count(s => !s.IsActive)))
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card">
+                    <div class="stat-label">Total Subscription Plans</div>
+                    <div class="stat-value">@((ViewBag.TotalPlans ?? plans.Count))</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <div class="stat-label">Active Subscription Plans</div>
+                    <div class="stat-value text-success">
+                        @((ViewBag.ActivePlans ?? plans.Count(p => p.IsActive)))
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <div class="stat-label">Inactive Subscription Plans</div>
+                    <div class="stat-value text-danger">
+                        @((ViewBag.InactivePlans ?? plans.Count(p => !p.IsActive)))
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 class="section-title mb-0">Society Registration Report</h5>
+                <span class="text-secondary small">Latest 10 registrations</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover" id="societyReport">
+                    <thead>
+                        <tr>
+                            <th>Society ID</th>
+                            <th>Society Name</th>
+                            <th>City</th>
+                            <th>State</th>
+                            <th>Registration Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (recentSocieties.Any())
+                        {
+                            foreach (var society in recentSocieties)
+                            {
+                        <tr>
+                            <td>#@society.SocietyId</td>
+                            <td>@society.Name</td>
+                            <td>@society.City</td>
+                            <td>@society.State</td>
+                            <td>@society.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (society.IsActive)
+                                        {
+                                <span class="status active-status">Active</span>
+                                        }
+                                        else
+                                        {
+                                <span class="status inactive-status">Inactive</span>
+                                        }
+                            </td>
+                        </tr>
+                            }
+                        }
+                        else
+                        {
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-4">
+                                No society records available.
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 class="section-title mb-0">Subscription Plan Report</h5>
+                <span class="text-secondary small">Current plans returned by the backend</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover" id="planReport">
+                    <thead>
+                        <tr>
+                            <th>Plan ID</th>
+                            <th>Plan Name</th>
+                            <th>Max Wings</th>
+                            <th>Max Floors / Wing</th>
+                            <th>Max Flats</th>
+                            <th>Max Amenities</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (plans.Any())
+                        {
+                            foreach (var plan in plans)
+                            {
+                        <tr>
+                            <td>#@plan.SubscriptionPlanId</td>
+                            <td>@plan.Name</td>
+                            <td>@plan.MaxWings</td>
+                            <td>@plan.MaxFloorsPerWing</td>
+                            <td>@plan.MaxFlats</td>
+                            <td>@plan.MaxAmenities</td>
+                            <td>
+                                @if (plan.IsActive)
+                                        {
+                                <span class="status active-status">Active</span>
+                                        }
+                                        else
+                                        {
+                                <span class="status inactive-status">Inactive</span>
+                                        }
+                            </td>
+                        </tr>
+                            }
+                        }
+                        else
+                        {
+                        <tr>
+                            <td colspan="7" class="text-center text-secondary py-4">
+                                No subscription plans available.
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function tableToCsv(tableId) {
+            const table = document.getElementById(tableId);
+            if (!table) return [];
+
+            return Array.from(table.querySelectorAll("tr")).map(row =>
+                Array.from(row.querySelectorAll("th,td")).map(cell => {
+                    const value = cell.innerText.trim().replace(/\s+/g, " ");
+                    return '"' + value.replace(/"/g, '""') + '"';
+                }).join(",")
+            );
+        }
+
+        function exportReports() {
+            const rows = [
+                "SOCIETY REGISTRATION REPORT",
+                ...tableToCsv("societyReport"),
+                "",
+                "SUBSCRIPTION PLAN REPORT",
+                ...tableToCsv("planReport")
+            ];
+
+            const blob = new Blob(
+                ["\uFEFF" + rows.join("\r\n")],
+                { type: "text/csv;charset=utf-8;" }
+            );
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = "MTSS_SuperAdmin_Reports.csv";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(url);
+        }
+    </script>
+
+</body>
+</html>

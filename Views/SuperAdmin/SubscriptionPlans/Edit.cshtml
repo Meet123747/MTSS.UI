@@ -1,0 +1,432 @@
+
+@model MTSS.UI.Models.ApiModels.SubscriptionPlans.SubscriptionPlanListItem
+
+@{
+    ViewData["Title"] = "Edit Subscription Plan";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>MTSS | Edit Subscription Plan</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        body {
+            margin: 0;
+            background: #f4f6fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #17243a;
+            color: white;
+            position: fixed;
+            padding: 25px 18px;
+        
+            display: flex;
+            flex-direction: column;
+}
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 7px;
+        }
+
+            .nav-link.active,
+            .nav-link:hover {
+                background: #2563eb;
+                color: white;
+            }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .content-card {
+            background: white;
+            border: none;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-weight: 600;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 22px;
+            color: #17243a;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .form-control {
+            padding: 10px 12px;
+        }
+
+        .form-check {
+            margin-bottom: 15px;
+        }
+
+        .form-check-label {
+            color: #334155;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 18px;
+            }
+        }
+    
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .logout-link {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #fca5a5;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .logout-link:hover,
+        .logout-link:focus {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+        <div class="brand">MTSS</div>
+
+        <p class="text-uppercase text-secondary small">
+            Main Menu
+        </p>
+
+        <nav class="nav flex-column">
+
+            <a class="nav-link"
+               asp-controller="SuperAdmin"
+               asp-action="Index">
+                Dashboard
+            </a>
+
+            <a class="nav-link"
+               href="@Url.Action("Societies", "SuperAdmin")">
+                Societies
+            </a>
+
+            <a class="nav-link active"
+               href="@Url.Action("SubscriptionPlans", "SuperAdmin")">
+                Subscription Plans
+            </a>
+
+            <a class="nav-link" href="#">Payments</a>
+            <a class="nav-link" href="#">Reports</a>
+            <a class="nav-link" href="#">Settings</a>
+
+        </nav>
+
+    
+        <div class="sidebar-bottom">
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="logout-link">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <div class="mb-4">
+
+            <a asp-controller="SuperAdmin"
+               asp-action="SubscriptionPlans"
+               class="text-decoration-none">
+                ? Back to Subscription Plans
+            </a>
+
+            <div class="mt-3">
+                <h2 class="page-title">Edit Subscription Plan</h2>
+
+                <p class="text-secondary mb-0">
+                    Update subscription plan limits and available features.
+                </p>
+            </div>
+
+        </div>
+
+        @if (ViewBag.ErrorMessage != null)
+        {
+        <div class="alert alert-danger">
+            @ViewBag.ErrorMessage
+        </div>
+        }
+
+        <form asp-controller="SuperAdmin"
+              asp-action="EditSubscriptionPlan"
+              asp-route-id="@Model.SubscriptionPlanId"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   name="SubscriptionPlanId"
+                   value="@Model.SubscriptionPlanId" />
+
+            <!-- Basic Information -->
+            <div class="content-card">
+
+                <h5 class="section-title">Basic Information</h5>
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Plan ID</label>
+                        <input type="text"
+                               class="form-control"
+                               value="@Model.SubscriptionPlanId"
+                               readonly />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Plan Name</label>
+                        <input type="text"
+                               name="Name"
+                               class="form-control"
+                               value="@Model.Name"
+                               required
+                               maxlength="100" />
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Plan Limits -->
+            <div class="content-card">
+
+                <h5 class="section-title">Plan Limits</h5>
+
+                <div class="row">
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Maximum Wings</label>
+                        <input type="number"
+                               name="MaxWings"
+                               class="form-control"
+                               value="@Model.MaxWings"
+                               min="0"
+                               required />
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Maximum Floors Per Wing</label>
+                        <input type="number"
+                               name="MaxFloorsPerWing"
+                               class="form-control"
+                               value="@Model.MaxFloorsPerWing"
+                               min="0"
+                               required />
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Maximum Flats</label>
+                        <input type="number"
+                               name="MaxFlats"
+                               class="form-control"
+                               value="@Model.MaxFlats"
+                               min="0"
+                               required />
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Maximum Amenities</label>
+                        <input type="number"
+                               name="MaxAmenities"
+                               class="form-control"
+                               value="@Model.MaxAmenities"
+                               min="0"
+                               required />
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Maximum Society Admins</label>
+                        <input type="number"
+                               name="MaxSocietyAdmins"
+                               class="form-control"
+                               value="@Model.MaxSocietyAdmins"
+                               min="0"
+                               required />
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Available Features -->
+            <div class="content-card">
+
+                <h5 class="section-title">Available Features</h5>
+
+                <div class="row">
+
+                    <div class="col-md-6">
+
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   name="GuestApprovalEnabled"
+                                   value="true"
+                                   class="form-check-input"
+                                   id="guestApproval"
+                                   checked="@Model.GuestApprovalEnabled" />
+
+                            <label class="form-check-label" for="guestApproval">
+                                Guest Approval
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   name="ParcelRegisterEnabled"
+                                   value="true"
+                                   class="form-check-input"
+                                   id="parcelRegister"
+                                   checked="@Model.ParcelRegisterEnabled" />
+
+                            <label class="form-check-label" for="parcelRegister">
+                                Parcel Register
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   name="AmenityPinEnabled"
+                                   value="true"
+                                   class="form-check-input"
+                                   id="amenityPin"
+                                   checked="@Model.AmenityPinEnabled" />
+
+                            <label class="form-check-label" for="amenityPin">
+                                Amenity PIN
+                            </label>
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   name="ComplaintManagementEnabled"
+                                   value="true"
+                                   class="form-check-input"
+                                   id="complaintManagement"
+                                   checked="@Model.ComplaintManagementEnabled" />
+
+                            <label class="form-check-label" for="complaintManagement">
+                                Complaint Management
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   name="ReportsEnabled"
+                                   value="true"
+                                   class="form-check-input"
+                                   id="reports"
+                                   checked="@Model.ReportsEnabled" />
+
+                            <label class="form-check-label" for="reports">
+                                Reports
+                            </label>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex justify-content-end gap-2 mb-4">
+
+                <a asp-controller="SuperAdmin"
+                   asp-action="SubscriptionPlans"
+                   class="btn btn-outline-secondary px-4">
+                    Cancel
+                </a>
+
+                <button type="submit"
+                        class="btn btn-primary px-4">
+                    Save Changes
+                </button>
+
+            </div>
+
+        </form>
+
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

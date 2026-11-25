@@ -1,0 +1,503 @@
+
+@model MTSS.UI.Models.ApiModels.SubscriptionPlans.SubscriptionPlanListItem
+
+@{
+    ViewData["Title"] = "Subscription Plan Details";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>MTSS | Subscription Plan Details</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        body {
+            margin: 0;
+            background: #f4f6fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #17243a;
+            color: white;
+            position: fixed;
+            padding: 25px 18px;
+        
+            display: flex;
+            flex-direction: column;
+}
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 7px;
+        }
+
+            .nav-link.active,
+            .nav-link:hover {
+                background: #2563eb;
+                color: white;
+            }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .content-card {
+            background: white;
+            border: none;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.04);
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-weight: 600;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 22px;
+            color: #17243a;
+        }
+
+        .detail-label {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .detail-value {
+            color: #17243a;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .detail-item {
+            margin-bottom: 25px;
+        }
+
+        .feature-status {
+            display: inline-block;
+            padding: 6px 13px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .enabled {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .disabled {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .active-status {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .inactive-status {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+            .btn-primary:hover {
+                background: #1d4ed8;
+                border-color: #1d4ed8;
+            }
+
+        .btn-danger {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        .btn-success {
+            background: #16a34a;
+            border-color: #16a34a;
+        }
+
+        @@media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 18px;
+            }
+        }
+    
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .logout-link {
+            display: block;
+            width: 100%;
+            text-align: left;
+            color: #fca5a5;
+            background: transparent;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font: inherit;
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .logout-link:hover,
+        .logout-link:focus {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+        <div class="brand">MTSS</div>
+
+        <p class="text-uppercase text-secondary small">
+            Main Menu
+        </p>
+
+        <nav class="nav flex-column">
+
+            <a class="nav-link"
+               asp-controller="SuperAdmin"
+               asp-action="Index">
+                Dashboard
+            </a>
+
+            <a class="nav-link"
+               href="@Url.Action("Societies", "SuperAdmin")">
+                Societies
+            </a>
+
+            <a class="nav-link active"
+               href="@Url.Action("SubscriptionPlans", "SuperAdmin")">
+                Subscription Plans
+            </a>
+
+            <a class="nav-link" href="#">Payments</a>
+            <a class="nav-link" href="#">Reports</a>
+            <a class="nav-link" href="#">Settings</a>
+
+        </nav>
+
+    
+        <div class="sidebar-bottom">
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="logout-link">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Page Header -->
+        <div class="mb-4">
+
+            <a asp-controller="SuperAdmin"
+               asp-action="SubscriptionPlans"
+               class="text-decoration-none">
+                ? Back to Subscription Plans
+            </a>
+
+            <div class="mt-3">
+                <h2 class="page-title">Subscription Plan Details</h2>
+
+                <p class="text-secondary mb-0">
+                    View subscription plan information and enabled features.
+                </p>
+            </div>
+
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+        }
+
+        @if (Model != null)
+        {
+            <!-- Basic Information -->
+        <div class="content-card">
+
+            <h5 class="section-title">Basic Information</h5>
+
+            <div class="row">
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Plan ID</div>
+                    <div class="detail-value">
+                        #@Model.SubscriptionPlanId
+                    </div>
+                </div>
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Plan Name</div>
+                    <div class="detail-value">
+                        @Model.Name
+                    </div>
+                </div>
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value">
+                        @if (Model.IsActive)
+                            {
+                        <span class="status active-status">Active</span>
+                            }
+                            else
+                            {
+                        <span class="status inactive-status">Inactive</span>
+                            }
+                    </div>
+                </div>
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Created At</div>
+                    <div class="detail-value">
+                        @Model.CreatedAt.ToString("dd MMM yyyy")
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+ <!-- Plan Limits -->
+        <div class="content-card">
+
+            <h5 class="section-title">Plan Limits</h5>
+
+            <div class="row">
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Maximum Wings</div>
+                    <div class="detail-value">@Model.MaxWings</div>
+                </div>
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Maximum Floors Per Wing</div>
+                    <div class="detail-value">@Model.MaxFloorsPerWing</div>
+                </div>
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Maximum Flats</div>
+                    <div class="detail-value">@Model.MaxFlats</div>
+                </div>
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Maximum Amenities</div>
+                    <div class="detail-value">@Model.MaxAmenities</div>
+                </div>
+
+                <div class="col-md-4 detail-item">
+                    <div class="detail-label">Maximum Society Admins</div>
+                    <div class="detail-value">@Model.MaxSocietyAdmins</div>
+                </div>
+
+            </div>
+
+        </div>
+
+ <!-- Enabled Features -->
+        <div class="content-card">
+
+            <h5 class="section-title">Available Features</h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <div class="detail-label">Guest Approval</div>
+
+                    @if (Model.GuestApprovalEnabled)
+                        {
+                    <span class="feature-status enabled">Enabled</span>
+                        }
+                        else
+                        {
+                    <span class="feature-status disabled">Disabled</span>
+                        }
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Parcel Register</div>
+
+                    @if (Model.ParcelRegisterEnabled)
+                        {
+                    <span class="feature-status enabled">Enabled</span>
+                        }
+                        else
+                        {
+                    <span class="feature-status disabled">Disabled</span>
+                        }
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Amenity PIN</div>
+
+                    @if (Model.AmenityPinEnabled)
+                        {
+                    <span class="feature-status enabled">Enabled</span>
+                        }
+                        else
+                        {
+                    <span class="feature-status disabled">Disabled</span>
+                        }
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Complaint Management</div>
+
+                    @if (Model.ComplaintManagementEnabled)
+                        {
+                    <span class="feature-status enabled">Enabled</span>
+                        }
+                        else
+                        {
+                    <span class="feature-status disabled">Disabled</span>
+                        }
+                </div>
+
+                <div class="col-md-6">
+                    <div class="detail-label">Reports</div>
+
+                    @if (Model.ReportsEnabled)
+                        {
+                    <span class="feature-status enabled">Enabled</span>
+                        }
+                        else
+                        {
+                    <span class="feature-status disabled">Disabled</span>
+                        }
+                </div>
+
+            </div>
+
+        </div>
+
+ <!-- Action Buttons -->
+        <div class="d-flex justify-content-end gap-2 flex-wrap mb-4">
+
+            <a asp-controller="SuperAdmin"
+               asp-action="SubscriptionPlans"
+               class="btn btn-outline-secondary px-4">
+                Back to Plans
+            </a>
+
+            <a asp-controller="SuperAdmin"
+               asp-action="EditSubscriptionPlan"
+               asp-route-id="@Model.SubscriptionPlanId"
+               class="btn btn-primary px-4">
+                Edit Plan
+            </a>
+
+            <form asp-controller="SuperAdmin"
+                  asp-action="UpdateSubscriptionPlanStatus"
+                  method="post"
+                  class="d-inline"
+                  onsubmit="return confirm('@(Model.IsActive ? "Are you sure you want to deactivate this subscription plan?" : "Are you sure you want to activate this subscription plan?")');">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden"
+                       name="id"
+                       value="@Model.SubscriptionPlanId" />
+
+                <input type="hidden"
+                       name="isActive"
+                       value="@(!Model.IsActive ? "true" : "false")" />
+
+                @if (Model.IsActive)
+                    {
+                <button type="submit"
+                        class="btn btn-danger px-4">
+                    Deactivate Plan
+                </button>
+                    }
+                    else
+                    {
+                <button type="submit"
+                        class="btn btn-success px-4">
+                    Activate Plan
+                </button>
+                    }
+
+            </form>
+
+        </div>
+        }
+        else
+        {
+        <div class="alert alert-danger">
+            Subscription plan information is not available.
+        </div>
+        }
+
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

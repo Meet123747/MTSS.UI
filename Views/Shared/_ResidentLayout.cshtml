@@ -1,0 +1,61 @@
+@using Microsoft.AspNetCore.Http
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7fb" />
+    <title>@ViewData["Title"] - MTSS Resident</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/resident.css" asp-append-version="true" />
+</head>
+<body>
+<div class="resident-shell">
+    <aside class="resident-sidebar" id="residentSidebar">
+        <a class="resident-brand" asp-controller="Resident" asp-action="Dashboard">
+            <span class="brand-symbol">M</span>
+            <span>MTSS<small>RESIDENT PORTAL</small></span>
+        </a>
+        <div class="sidebar-caption">WORKSPACE</div>
+        <a class="resident-nav" asp-controller="Resident" asp-action="Dashboard"><span>⌂</span> Overview</a>
+        <div class="sidebar-caption">MY SERVICES</div>
+        <a class="resident-nav" asp-controller="Resident" asp-action="Complaints"><span>▤</span> My complaints</a>
+        <a class="resident-nav" asp-controller="Resident" asp-action="Notifications"><span>♧</span> Notifications</a>
+        <a class="resident-nav" asp-controller="Resident" asp-action="Amenities"><span>⌁</span> Amenity PINs</a>
+        <div class="resident-sidebar-spacer"></div>
+        <div class="resident-profile">
+            <div class="profile-avatar">@(Context.Session.GetString("FullName")?.FirstOrDefault().ToString().ToUpperInvariant() ?? "R")</div>
+            <div class="profile-meta"><strong>@(Context.Session.GetString("FullName") ?? "Resident")</strong><small>Resident account</small></div>
+        </div>
+        <form asp-controller="Auth" asp-action="Logout" method="post" class="resident-logout-form">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="resident-logout"><span>↪</span> Sign out</button>
+        </form>
+    </aside>
+
+    <div class="resident-main">
+        <header class="resident-topbar">
+            <button class="mobile-menu-button" type="button" id="residentMenuButton" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+            <div class="topbar-heading">
+                <strong>@ViewData["PageHeading"]</strong>
+                <span>Your community, at a glance</span>
+            </div>
+            <div class="topbar-right">
+                <span class="secure-pill"><i></i> Secure resident access</span>
+                <div class="topbar-avatar">@(Context.Session.GetString("FullName")?.FirstOrDefault().ToString().ToUpperInvariant() ?? "R")</div>
+            </div>
+        </header>
+        <main class="resident-content">
+            @if (TempData["Success"] != null) { <div class="alert alert-success resident-alert">@TempData["Success"]</div> }
+            @if (TempData["Error"] != null) { <div class="alert alert-danger resident-alert">@TempData["Error"]</div> }
+            @RenderBody()
+        </main>
+        <footer class="resident-footer">© @DateTime.Now.Year MTSS · Resident Portal</footer>
+    </div>
+</div>
+<div class="resident-overlay" id="residentOverlay"></div>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/resident.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
