@@ -1,3 +1,4 @@
+
 @using System.Text.Json
 @{
     ViewData["Title"] = ViewBag.Title ?? "Society Management";
@@ -28,6 +29,34 @@
     {
         var v = Prop(row, key);
         return string.IsNullOrEmpty(v) ? "—" : v;
+    }
+
+    string RecordId(JsonElement row)
+    {
+        var keys = module.ToLowerInvariant() switch
+        {
+            "wings" => new[] { "wingId", "id" },
+            "floors" => new[] { "floorId", "id" },
+            "flats" => new[] { "flatId", "id" },
+            "residents" => new[] { "residentProfileId", "id" },
+            "amenities" => new[] { "amenityId", "id" },
+            "guests" => new[] { "guestEntryId", "guestEntryRequestId", "id" },
+            "parcels" => new[] { "parcelId", "id" },
+            "complaints" => new[] { "complaintId", "id" },
+            "notifications" => new[] { "notificationId", "id" },
+            "amenity-logs" => new[] { "amenityAccessLogId", "id" },
+            "amenity-pins" => new[] { "amenityAccessPinId", "id" },
+            _ => new[] { "id" }
+        };
+
+        foreach (var key in keys)
+        {
+            var value = Prop(row, key);
+            if (!string.IsNullOrWhiteSpace(value))
+                return value;
+        }
+
+        return "—";
     }
 
     var wingNames = wings.ToDictionary(w => Prop(w, "wingId", "id"), w => Prop(w, "name"));
@@ -145,10 +174,13 @@
                         <tbody id="dataRows">
                             @foreach (var row in rows)
                             {
-                                var id = new[] { "id", "wingId", "floorId", "flatId", "residentProfileId", "amenityId", "guestEntryId", "guestEntryRequestId", "parcelId", "complaintId", "notificationId", "amenityAccessLogId", "amenityAccessPinId" }
-                                    .Select(k => Value(row, k)).FirstOrDefault(v => v != "—") ?? "—";
+                                var id = RecordId(row);
                                 var isActive = Value(row, "isActive").Equals("True", StringComparison.OrdinalIgnoreCase);
                                 var statusText = Value(row, "status");
+                                var isTerminalComplaint =
+                                    module == "complaints" &&
+                                    (statusText.Equals("Resolved", StringComparison.OrdinalIgnoreCase) ||
+                                     statusText.Equals("Rejected", StringComparison.OrdinalIgnoreCase));
 
                                 <tr>
                                     <td class="fw-semibold sa-record-id" data-label="Record">#@id</td>
@@ -215,19 +247,21 @@
                                             <a asp-action="Edit" asp-route-module="@module" asp-route-id="@id" class="btn btn-sm btn-outline-primary">Edit</a>
                                         }
 
-                                        @if (module == "complaints")
+                                        @if (module == "complaints" && !isTerminalComplaint)
                                         {
                                             <form asp-action="UpdateStatus" method="post" class="d-inline-flex flex-wrap gap-1">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="module" value="@module" />
                                                 <input type="hidden" name="id" value="@id" />
                                                 <select name="status" class="form-select form-select-sm">
-                                                    @foreach (var s in new[] { "Open", "InProgress", "Resolved", "Approved", "Rejected" })
+                                                    @foreach (var s in new[] { "InProgress", "Resolved", "Rejected" })
                                                     {
-                                                        <option value="@s" selected="@(statusText.Equals(s, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@s</option>
+                                                        var selected = statusText.Equals(s, StringComparison.OrdinalIgnoreCase) ||
+                                                            (statusText.Equals("Open", StringComparison.OrdinalIgnoreCase) && s == "InProgress");
+                                                        <option value="@s" selected="@(selected ? "selected" : null)">@s</option>
                                                     }
                                                 </select>
-                                                <input name="adminRemarks" class="form-control form-control-sm" placeholder="Admin remarks" style="max-width:140px" />
+                                                <input name="adminRemarks" value="@Prop(row, "adminRemarks")" class="form-control form-control-sm" placeholder="Admin remarks" style="max-width:140px" />
                                                 <button class="btn btn-sm btn-outline-primary">Update</button>
                                             </form>
                                         }
