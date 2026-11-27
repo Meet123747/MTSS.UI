@@ -1,24 +1,134 @@
+@using System.Text.Json
 @{
     ViewData["Title"] = "Guest Management";
     ViewData["PageHeading"] = "Guest management";
+    var rows = ViewBag.Rows as List<JsonElement> ?? new();
+    var loadFailed = ViewBag.LoadFailed is bool failed && failed;
+
+    string Val(JsonElement row, params string[] keys)
+    {
+        if (row.ValueKind != JsonValueKind.Object) return "";
+        foreach (var key in keys)
+            if (row.TryGetProperty(key, out var value) && value.ValueKind != JsonValueKind.Null)
+                return value.ToString();
+        return "";
+    }
+
+    string FormatDate(string raw) =>
+        DateTime.TryParse(raw, out var date)
+            ? date.ToString("dd MMM yyyy, hh:mm tt")
+            : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
 }
 
 <div class="page-intro">
     <div>
         <div class="page-eyebrow">RESIDENT SERVICES</div>
         <h1 class="page-title">Guest Management</h1>
-        <p class="page-subtitle">Guest entry information for your residence.</p>
+        <p class="page-subtitle">Review guest-entry requests and respond to pending requests.</p>
     </div>
     <a class="btn btn-outline-resident" asp-action="Dashboard">← Back to Overview</a>
 </div>
 
-<div class="resident-card resident-card-body">
-    <div class="empty-state">
-        <div class="empty-icon"><span data-icon="users"></span></div>
-        <strong>Guest entries are managed centrally</strong>
-        <p class="mx-auto" style="max-width:560px">
-            Guest registration, entry verification and approval are centrally managed by the SocietyAdmin panel to maintain security and controlled access.
-            Residents should contact their SocietyAdmin for guest-entry assistance.
-        </p>
+@if (loadFailed)
+{
+    <div class="alert alert-warning resident-alert" role="alert">@ViewBag.ErrorMessage</div>
+}
+else if (rows.Count == 0)
+{
+    <div class="resident-card resident-card-body">
+        <div class="empty-state">
+            <div class="empty-icon"><span data-icon="users"></span></div>
+            <strong>No guest-entry requests yet</strong>
+            <p>Requests created for your account by the SocietyAdmin will appear here.</p>
+        </div>
     </div>
-</div>
+}
+else
+{
+    <div class="resident-card">
+        <div class="resident-toolbar">
+            <div><h2 class="section-heading">Guest-entry history <span class="badge text-bg-light ms-1">@rows.Count</span></h2></div>
+        </div>
+        <div class="resident-table-wrap">
+            <table class="resident-table resident-table-cards">
+                <thead>
+                    <tr>
+                        <th>Guest</th>
+                        <th>Purpose</th>
+                        <th>Request date</th>
+                        <th>Status</th>
+                        <th>Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        var idText = Val(row, "guestEntryRequestId");
+                        var guestName = Val(row, "guestName");
+                        var phone = Val(row, "guestPhone");
+                        var purpose = Val(row, "purpose");
+                        var createdAt = Val(row, "createdAt");
+                        var status = Val(row, "status");
+                        var isPending = status.Equals("Pending", StringComparison.OrdinalIgnoreCase);
+                        var statusClass = status.Equals("Approved", StringComparison.OrdinalIgnoreCase)
+                            ? "success"
+                            : status.Equals("Rejected", StringComparison.OrdinalIgnoreCase)
+                                ? "danger"
+                                : "warning";
+
+                        <tr>
+                            <td data-label="Guest">
+                                <strong>@(string.IsNullOrWhiteSpace(guestName) ? "Guest" : guestName)</strong>
+                                <div class="text-secondary mt-1">@(string.IsNullOrWhiteSpace(phone) ? "—" : phone)</div>
+                            </td>
+                            <td data-label="Purpose">@(string.IsNullOrWhiteSpace(purpose) ? "—" : purpose)</td>
+                            <td data-label="Request date">@FormatDate(createdAt)</td>
+                            <td data-label="Status">
+                                <span class="status-pill @statusClass">@(string.IsNullOrWhiteSpace(status) ? "Unknown" : status)</span>
+                            </td>
+                            <td data-label="Response" class="d-flex gap-2 align-items-center">
+                                @if (isPending && int.TryParse(idText, out var id))
+                                {
+                                    <form asp-action="RespondToGuestEntry" method="post" class="guest-response-form">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@id" />
+                                        <input type="hidden" name="status" value="Approved" />
+                                        <button class="btn btn-sm btn-success" type="submit">Approve</button>
+                                    </form>
+                                    <form asp-action="RespondToGuestEntry" method="post" class="guest-response-form">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@id" />
+                                        <input type="hidden" name="status" value="Rejected" />
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                                    </form>
+                                }
+                                else if (isPending)
+                                {
+                                    <span class="text-secondary">Response unavailable</span>
+                                }
+                                else
+                                {
+                                    <span class="text-secondary">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.guest-response-form').forEach(form => {
+            form.addEventListener('submit', () => {
+                const button = form.querySelector('button[type="submit"]');
+                if (!button) return;
+                button.disabled = true;
+                button.textContent = 'Submitting…';
+                button.setAttribute('aria-live', 'polite');
+            });
+        });
+    </script>
+}

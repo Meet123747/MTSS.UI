@@ -149,10 +149,61 @@ public class ResidentController : Controller
     }
 
     [HttpGet]
-    public IActionResult Guests()
+    public async Task<IActionResult> Guests(CancellationToken cancellationToken)
     {
         if (!IsResidentSignedIn()) return LoginRedirect();
+
+        ViewBag.Rows = new List<JsonElement>();
+        try
+        {
+            var result = await GetRows("api/resident/guest-entries", cancellationToken);
+            if (result.Unauthorized) return LoginRedirect();
+
+            ViewBag.Rows = result.Rows;
+            ViewBag.LoadFailed = result.Error != null;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            ViewBag.LoadFailed = true;
+        }
+
+        if (ViewBag.LoadFailed is bool failed && failed)
+            ViewBag.ErrorMessage = "Guest entries are temporarily unavailable. Please try again later.";
+
         return View("~/Views/Resident/Guests/Index.cshtml");
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RespondToGuestEntry(int id, string? status, CancellationToken cancellationToken)
+    {
+        if (!IsResidentSignedIn()) return LoginRedirect();
+        if (id <= 0 || string.IsNullOrWhiteSpace(status) ||
+            !(status.Equals("Approved", StringComparison.OrdinalIgnoreCase) ||
+              status.Equals("Rejected", StringComparison.OrdinalIgnoreCase)))
+        {
+            TempData["Error"] = "Invalid guest-entry response. Please choose Approve or Reject again.";
+            return RedirectToAction(nameof(Guests));
+        }
+
+        try
+        {
+            using var response = await _api.PatchAsync(
+                $"api/resident/guest-entries/{id}/status",
+                new { status },
+                cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized) return LoginRedirect();
+            TempData[response.IsSuccessStatusCode ? "Success" : "Error"] =
+                response.IsSuccessStatusCode
+                    ? $"Guest entry {status.ToLowerInvariant()}."
+                    : "We couldn't update this guest entry. Please refresh and try again.";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            TempData["Error"] = "Unable to connect to the guest-entry service. Please try again.";
+        }
+
+        return RedirectToAction(nameof(Guests));
     }
 
     [HttpGet]
