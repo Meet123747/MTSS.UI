@@ -23,12 +23,12 @@
     <div>
         <div class="page-eyebrow">RESIDENT SERVICES</div>
         <h1 class="page-title">My Parcels</h1>
-        <p class="page-subtitle">Read-only view of parcels registered for your flat and their collection status.</p>
+        <p class="page-subtitle">Parcel assistance and collection information.</p>
     </div>
     <a class="btn btn-outline-resident" asp-action="Dashboard">← Back to Overview</a>
 </div>
 
-@if (ViewBag.ErrorMessage != null)
+@if (!endpointUnavailable && ViewBag.ErrorMessage != null)
 {
     <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div>
 }
@@ -38,9 +38,10 @@
     <div class="resident-card resident-card-body">
         <div class="empty-state">
             <div class="empty-icon"><span data-icon="package"></span></div>
-            <strong>Resident Parcel service is not available yet</strong>
+            <strong>Parcel services are managed centrally</strong>
             <p class="mx-auto" style="max-width:560px">
-                The current MTSS backend only exposes parcel endpoints under <code>/api/societyadmin/parcels</code> (restricted to the <strong>SocietyAdmin</strong> role) and does not yet expose a resident-scoped parcel endpoint. Please contact your Society Admin for parcel collection updates.
+                Parcel registration, tracking and collection-status management are currently handled centrally through the SocietyAdmin panel.
+                Residents should contact their SocietyAdmin for parcel-related assistance.
             </p>
         </div>
     </div>

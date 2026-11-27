@@ -19,25 +19,36 @@
     <div>
         <div class="page-eyebrow">COMMUNITY AMENITIES</div>
         <h1 class="page-title">My Amenity PINs</h1>
-        <p class="page-subtitle">View your amenity access history or revoke an active unused PIN. Raw PINs are shown only at generation.</p>
+        <p class="page-subtitle">Information about resident amenity PIN access.</p>
     </div>
-    <a class="btn btn-resident" asp-action="GeneratePin"><span data-icon="plus" class="mtss-icon-sm"></span> Generate PIN</a>
 </div>
 
-@if (ViewBag.ErrorMessage != null) { <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div> }
-
-<div class="resident-card">
-    @if (rows.Count == 0)
-    {
+@if (ViewBag.AmenitiesUnavailable is bool unavailable && unavailable)
+{
+    <div class="resident-card resident-card-body">
         <div class="empty-state">
             <div class="empty-icon"><span data-icon="key"></span></div>
-            <strong>No amenity PINs found</strong>
-            <p>Generate a PIN when you need amenity access.</p>
-            <a class="btn btn-resident mt-3" asp-action="GeneratePin">Generate a PIN</a>
+            <strong>Amenity PIN access is temporarily restricted</strong>
+            <p class="mx-auto" style="max-width:560px">
+                Resident-specific Amenity PIN access is temporarily restricted in the current evaluation deployment because resident accounts are using temporary credentials and live email-based account verification/linking has not yet been configured.
+                Amenity PIN generation and resident PIN access are currently unavailable.
+            </p>
         </div>
-    }
-    else
-    {
+    </div>
+}
+else
+{
+    <div class="resident-card">
+        @if (rows.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon"><span data-icon="key"></span></div>
+                <strong>No amenity PINs found</strong>
+                <p>Amenity PIN access is currently unavailable.</p>
+            </div>
+        }
+        else
+        {
         <div class="resident-toolbar">
             <div><h2 class="section-heading">My PIN Records <span class="badge text-bg-light ms-1">@rows.Count</span></h2></div>
             <div class="resident-toolbar-controls">
@@ -110,9 +121,9 @@
                 </tbody>
             </table>
         </div>
-    }
-</div>
-<div class="section-note mt-3">PINs are valid for 15 minutes, single-use, and stored as hashes by the backend.</div>
+        }
+    </div>
+}
 
 @section Scripts {
     <script>

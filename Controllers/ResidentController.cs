@@ -339,21 +339,11 @@ public class ResidentController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Amenities(CancellationToken cancellationToken)
+    public IActionResult Amenities(CancellationToken cancellationToken)
     {
         if (!IsResidentSignedIn()) return LoginRedirect();
-        try
-        {
-            var result = await GetRows("api/resident/amenity-pins", cancellationToken);
-            if (result.Unauthorized) return LoginRedirect();
-            ViewBag.Rows = result.Rows;
-            ViewBag.ErrorMessage = result.Error;
-        }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
-        {
-            ViewBag.Rows = new List<JsonElement>();
-            ViewBag.ErrorMessage = "Unable to load your amenity PINs.";
-        }
+        ViewBag.Rows = new List<JsonElement>();
+        ViewBag.AmenitiesUnavailable = true;
         return View("~/Views/Resident/Amenities/Index.cshtml");
     }
 
@@ -389,86 +379,31 @@ public class ResidentController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> GeneratePin(CancellationToken cancellationToken)
+    public IActionResult GeneratePin(CancellationToken cancellationToken)
     {
         if (!IsResidentSignedIn()) return LoginRedirect();
-        if (!await LoadKnownAmenitiesFromPinHistoryAsync(cancellationToken)) return LoginRedirect();
-        return View("~/Views/Resident/Amenities/GeneratePin.cshtml");
+        return RedirectToAction(nameof(Amenities));
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> GeneratePin(int amenityId, CancellationToken cancellationToken)
+    public IActionResult GeneratePin(int amenityId, CancellationToken cancellationToken)
     {
         if (!IsResidentSignedIn()) return LoginRedirect();
-        if (amenityId <= 0)
-        {
-            await LoadKnownAmenitiesFromPinHistoryAsync(cancellationToken);
-            ViewBag.ErrorMessage = "Please enter a valid Amenity ID.";
-            ViewBag.AmenityId = amenityId;
-            return View("~/Views/Resident/Amenities/GeneratePin.cshtml");
-        }
-
-        try
-        {
-            using var response = await _api.PostAsync(
-                "api/resident/amenity-pins",
-                new { amenityId },
-                cancellationToken);
-
-            if (response.StatusCode == HttpStatusCode.Unauthorized) return LoginRedirect();
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            if (!response.IsSuccessStatusCode)
-            {
-                await LoadKnownAmenitiesFromPinHistoryAsync(cancellationToken);
-                ViewBag.ErrorMessage = ReadMessage(body, $"PIN generation failed (HTTP {(int)response.StatusCode}).");
-                ViewBag.AmenityId = amenityId;
-                return View("~/Views/Resident/Amenities/GeneratePin.cshtml");
-            }
-
-            using var document = JsonDocument.Parse(body);
-            ViewBag.GeneratedData = document.RootElement.TryGetProperty("data", out var data) ? data.Clone() : default;
-            ViewBag.SuccessMessage = ReadMessage(body, "Your amenity PIN was generated.");
-            return View("~/Views/Resident/Amenities/Generated.cshtml");
-        }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
-        {
-            await LoadKnownAmenitiesFromPinHistoryAsync(cancellationToken);
-            ViewBag.ErrorMessage = "Unable to generate a PIN right now.";
-            ViewBag.AmenityId = amenityId;
-            return View("~/Views/Resident/Amenities/GeneratePin.cshtml");
-        }
+        return RedirectToAction(nameof(Amenities));
     }
 
     [HttpGet]
-    public async Task<IActionResult> PinDetails(int id, CancellationToken cancellationToken)
+    public IActionResult PinDetails(int id, CancellationToken cancellationToken)
     {
         if (!IsResidentSignedIn()) return LoginRedirect();
-        if (id <= 0) return BadRequest();
-        try
-        {
-            var result = await GetOne($"api/resident/amenity-pins/{id}", cancellationToken);
-            if (result.Unauthorized) return LoginRedirect();
-            if (result.Error != null)
-            {
-                TempData["Error"] = result.Error;
-                return RedirectToAction(nameof(Amenities));
-            }
-            ViewBag.Record = result.Data;
-            return View("~/Views/Resident/Amenities/Details.cshtml");
-        }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
-        {
-            TempData["Error"] = "Unable to load PIN details.";
-            return RedirectToAction(nameof(Amenities));
-        }
+        return RedirectToAction(nameof(Amenities));
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> RevokePin(int id, CancellationToken cancellationToken)
+    public IActionResult RevokePin(int id, CancellationToken cancellationToken)
     {
         if (!IsResidentSignedIn()) return LoginRedirect();
-        if (id <= 0) return BadRequest();
-        return await SendBodylessPatch($"api/resident/amenity-pins/{id}/revoke", nameof(Amenities), cancellationToken);
+        return RedirectToAction(nameof(Amenities));
     }
 
     private async Task<IActionResult> SendBodylessPatch(string endpoint, string returnAction, CancellationToken cancellationToken)
