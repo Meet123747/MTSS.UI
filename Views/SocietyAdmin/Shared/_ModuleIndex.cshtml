@@ -265,19 +265,7 @@
                                                 <button class="btn btn-sm btn-outline-primary">Update</button>
                                             </form>
                                         }
-                                        else if (module == "guests")
-                                        {
-                                            <form asp-action="UpdateStatus" method="post" class="d-inline-flex flex-wrap gap-1">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="module" value="@module" />
-                                                <input type="hidden" name="id" value="@id" />
-                                                <select name="status" class="form-select form-select-sm">
-                                                    <option value="Approved" selected="@(statusText.Equals("Approved", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Approved</option>
-                                                    <option value="Rejected" selected="@(statusText.Equals("Rejected", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Rejected</option>
-                                                </select>
-                                                <button class="btn btn-sm btn-outline-primary">Update</button>
-                                            </form>
-                                        }
+                                       
                                         else if (module == "parcels")
                                         {
                                             var isCollected = statusText.Equals("Collected", StringComparison.OrdinalIgnoreCase);
