@@ -1,67 +1,181 @@
+
 @using System.Text.Json
+
 @{
     ViewData["Title"] = "Amenity PINs";
     ViewData["PageHeading"] = "Amenity access";
+
+    var amenities = ViewBag.Amenities as List<JsonElement> ?? new();
     var rows = ViewBag.Rows as List<JsonElement> ?? new();
+
     string Val(JsonElement row, params string[] keys)
     {
         if (row.ValueKind != JsonValueKind.Object) return "";
-        foreach (var k in keys)
-            if (row.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null)
-                return v.ToString();
+
+        foreach (var key in keys)
+        {
+            if (row.TryGetProperty(key, out var value) &&
+                value.ValueKind != JsonValueKind.Null)
+                return value.ToString();
+        }
+
         return "";
     }
-    string FormatDate(string raw) => DateTime.TryParse(raw, out var dt) ? dt.ToString("dd MMM yyyy, hh:mm tt") : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
-    var statuses = rows.Select(r => Val(r, "status")).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s).ToList();
+
+    string FormatDate(string raw) =>
+        DateTime.TryParse(raw, out var date)
+            ? date.ToString("dd MMM yyyy, hh:mm tt")
+            : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
+
+    string OperatingHours(JsonElement amenity)
+    {
+        var direct = Val(amenity, "operatingHours", "hours", "availability");
+        if (!string.IsNullOrWhiteSpace(direct)) return direct;
+
+        var opens = Val(amenity, "openingTime", "opensAt", "openTime", "startTime");
+        var closes = Val(amenity, "closingTime", "closesAt", "closeTime", "endTime");
+
+        if (!string.IsNullOrWhiteSpace(opens) || !string.IsNullOrWhiteSpace(closes))
+            return $"{(string.IsNullOrWhiteSpace(opens) ? "Open" : opens)} – {(string.IsNullOrWhiteSpace(closes) ? "Close" : closes)}";
+
+        return "Hours not provided";
+    }
+
+    var statuses = rows
+        .Select(row => Val(row, "status"))
+        .Where(status => !string.IsNullOrWhiteSpace(status))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(status => status)
+        .ToList();
 }
 
 <div class="page-intro">
     <div>
         <div class="page-eyebrow">COMMUNITY AMENITIES</div>
         <h1 class="page-title">My Amenity PINs</h1>
-        <p class="page-subtitle">Information about resident amenity PIN access.</p>
+        <p class="page-subtitle">Your secure access to the facilities in your society.</p>
     </div>
+
+    <button type="button"
+            class="btn btn-resident"
+            data-bs-toggle="modal"
+            data-bs-target="#amenityPinModal"
+            @(amenities.Count == 0 ? "disabled" : null)>
+        <span data-icon="plus" class="mtss-icon-sm"></span>
+        Generate PIN
+    </button>
 </div>
 
-@if (ViewBag.AmenitiesUnavailable is bool unavailable && unavailable)
+@if (TempData["Success"] != null)
 {
-    <div class="resident-card resident-card-body">
-        <div class="empty-state">
-            <div class="empty-icon"><span data-icon="key"></span></div>
-            <strong>Amenity PIN access is temporarily restricted</strong>
-            <p class="mx-auto" style="max-width:560px">
-                Resident-specific Amenity PIN access is temporarily restricted in the current evaluation deployment because resident accounts are using temporary credentials and live email-based account verification/linking has not yet been configured.
-                Amenity PIN generation and resident PIN access are currently unavailable.
-            </p>
-        </div>
+    <div class="alert alert-success resident-alert">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger resident-alert">@TempData["Error"]</div>
+}
+
+@if (ViewBag.AmenityError is string amenityError && !string.IsNullOrWhiteSpace(amenityError))
+{
+    <div class="alert alert-danger resident-alert">@amenityError</div>
+}
+
+<div class="amenity-section-heading">
+    <div>
+        <h2 class="section-heading">Available Amenities</h2>
+        <p class="section-note">Choose a facility to generate your secure access PIN.</p>
+    </div>
+
+    <span class="badge text-bg-light">@amenities.Count amenities</span>
+</div>
+
+@if (amenities.Count == 0)
+{
+    <div class="resident-card empty-state">
+        <div class="empty-icon"><span data-icon="building"></span></div>
+        <strong>No amenities available</strong>
+        <p>There are currently no active amenities available for your society.</p>
     </div>
 }
 else
 {
-    <div class="resident-card">
-        @if (rows.Count == 0)
+    <div class="amenity-card-grid">
+        @foreach (var amenity in amenities)
         {
-            <div class="empty-state">
-                <div class="empty-icon"><span data-icon="key"></span></div>
-                <strong>No amenity PINs found</strong>
-                <p>Amenity PIN access is currently unavailable.</p>
-            </div>
+            var amenityId = Val(amenity, "amenityId", "id");
+            var name = Val(amenity, "name", "amenityName");
+            var description = Val(amenity, "description", "details");
+            var hours = OperatingHours(amenity);
+
+            <button type="button"
+                    class="amenity-card"
+                    data-amenity-id="@amenityId"
+                    @(string.IsNullOrWhiteSpace(amenityId) ? "disabled" : null)>
+
+                <span class="amenity-card-icon" aria-hidden="true">
+                    <span data-icon="building-2"></span>
+                </span>
+
+                <span class="amenity-card-content">
+                    <strong>@(string.IsNullOrWhiteSpace(name) ? "Amenity" : name)</strong>
+                    <span>@(string.IsNullOrWhiteSpace(description) ? "Society facility" : description)</span>
+
+                    <small>
+                        <span data-icon="clock" class="mtss-icon-sm"></span>
+                        @hours
+                    </small>
+                </span>
+
+                <span class="amenity-card-arrow" aria-hidden="true">→</span>
+            </button>
         }
-        else
-        {
+    </div>
+}
+
+<div class="resident-card amenity-history-card">
+
+    @if (ViewBag.PinError is string pinError && !string.IsNullOrWhiteSpace(pinError))
+    {
+        <div class="resident-card-body">
+            <div class="alert alert-danger resident-alert mb-0">@pinError</div>
+        </div>
+    }
+    else if (rows.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-icon"><span data-icon="key"></span></div>
+            <strong>No amenity PINs found</strong>
+            <p>Your generated PINs will appear here.</p>
+        </div>
+    }
+    else
+    {
         <div class="resident-toolbar">
-            <div><h2 class="section-heading">My PIN Records <span class="badge text-bg-light ms-1">@rows.Count</span></h2></div>
+            <div>
+                <h2 class="section-heading">
+                    PIN History
+                    <span class="badge text-bg-light ms-1">@rows.Count</span>
+                </h2>
+            </div>
+
             <div class="resident-toolbar-controls">
                 <select id="pinStatusFilter" class="form-select" style="width:auto">
                     <option value="">All statuses</option>
-                    @foreach (var s in statuses)
+
+                    @foreach (var status in statuses)
                     {
-                        <option value="@s.ToLowerInvariant()">@s</option>
+                        <option value="@status.ToLowerInvariant()">@status</option>
                     }
                 </select>
-                <input id="pinSearch" class="form-control" style="width:220px" placeholder="Search by amenity..." />
+
+                <input id="pinSearch"
+                       class="form-control"
+                       style="width:220px"
+                       placeholder="Search by amenity..." />
             </div>
         </div>
+
         <div class="resident-table-wrap">
             <table class="resident-table resident-table-cards">
                 <thead>
@@ -74,40 +188,62 @@ else
                         <th>Actions</th>
                     </tr>
                 </thead>
+
                 <tbody id="pinRows">
                     @foreach (var row in rows)
                     {
                         var idText = Val(row, "amenityAccessPinId", "id");
-                        var amenity = Val(row, "amenityName");
+                        var amenityName = Val(row, "amenityName");
                         var status = Val(row, "status");
                         var generated = Val(row, "generatedAt", "createdAt");
                         var expires = Val(row, "expiresAt");
                         var usedAt = Val(row, "usedAt");
+
                         var isActive = status.Equals("Active", StringComparison.OrdinalIgnoreCase);
-                        var pillClass = status.Equals("Active", StringComparison.OrdinalIgnoreCase)
-                            ? "success"
-                            : status.Equals("Used", StringComparison.OrdinalIgnoreCase)
-                                ? ""
-                                : status.Equals("Expired", StringComparison.OrdinalIgnoreCase)
-                                    ? "warning"
-                                    : "danger";
+
+                        var pillClass = isActive ? "success"
+                            : status.Equals("Used", StringComparison.OrdinalIgnoreCase) ? ""
+                            : status.Equals("Expired", StringComparison.OrdinalIgnoreCase) ? "warning"
+                            : "danger";
 
                         <tr data-status="@status.ToLowerInvariant()">
-                            <td data-label="Amenity"><strong>@(string.IsNullOrWhiteSpace(amenity) ? "Amenity" : amenity)</strong></td>
-                            <td data-label="Status"><span class="status-pill @pillClass">@(string.IsNullOrWhiteSpace(status) ? "Unknown" : status)</span></td>
+                            <td data-label="Amenity">
+                                <strong>@(string.IsNullOrWhiteSpace(amenityName) ? "Amenity" : amenityName)</strong>
+                            </td>
+
+                            <td data-label="Status">
+                                <span class="status-pill @pillClass">
+                                    @(string.IsNullOrWhiteSpace(status) ? "Unknown" : status)
+                                </span>
+                            </td>
+
                             <td data-label="Generated">@FormatDate(generated)</td>
                             <td data-label="Expires">@FormatDate(expires)</td>
                             <td data-label="Used at">@FormatDate(usedAt)</td>
+
                             <td data-label="Actions" class="d-flex gap-2 align-items-center">
                                 @if (int.TryParse(idText, out var id))
                                 {
-                                    <a class="action-link" asp-action="PinDetails" asp-route-id="@id">Details</a>
+                                    <a class="action-link"
+                                       asp-action="PinDetails"
+                                       asp-route-id="@id">
+                                        Details
+                                    </a>
+
                                     @if (isActive && string.IsNullOrWhiteSpace(usedAt))
                                     {
-                                        <form asp-action="RevokePin" method="post" onsubmit="return confirm('Are you sure you want to revoke this active PIN?');">
+                                        <form asp-action="RevokePin"
+                                              method="post"
+                                              onsubmit="return confirm('Are you sure you want to revoke this active PIN?');">
+
                                             @Html.AntiForgeryToken()
+
                                             <input type="hidden" name="id" value="@id" />
-                                            <button class="action-link border-0 bg-transparent p-0 text-danger" type="submit">Revoke</button>
+
+                                            <button class="action-link border-0 bg-transparent p-0 text-danger"
+                                                    type="submit">
+                                                Revoke
+                                            </button>
                                         </form>
                                     }
                                 }
@@ -121,26 +257,831 @@ else
                 </tbody>
             </table>
         </div>
-        }
+    }
+</div>
+
+<!-- GENERATE AMENITY PIN MODAL -->
+<div class="modal fade"
+     id="amenityPinModal"
+     tabindex="-1"
+     aria-labelledby="amenityPinModalTitle"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content amenity-pin-modal">
+
+            <div class="modal-header border-0">
+                <div class="modal-heading-content">
+                    <div class="modal-icon">
+                        <span data-icon="shield-check"></span>
+                    </div>
+
+                    <div>
+                        <span class="page-eyebrow">SECURE AMENITY ACCESS</span>
+
+                        <h2 class="modal-title" id="amenityPinModalTitle">
+                            Generate Access PIN
+                        </h2>
+
+                        <p class="modal-description" id="amenityModalDescription">
+                            Select the facility you want to access.
+                        </p>
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="generateAmenityPinForm">
+                    @Html.AntiForgeryToken()
+
+                    <!-- STEP 1: AMENITY SELECTION -->
+                    <div id="pinSelectionView">
+
+                        <div class="pin-step-indicator">
+                            <span class="pin-step active">1</span>
+                            <span class="pin-step-line"></span>
+                            <span class="pin-step">2</span>
+                        </div>
+
+                        <label class="form-label fw-semibold" for="amenityId">
+                            Select amenity
+                        </label>
+
+                        <select id="amenityId"
+                                name="amenityId"
+                                class="form-select amenity-pin-select"
+                                required>
+
+                            <option value="">Choose an amenity</option>
+
+                            @foreach (var amenity in amenities)
+                            {
+                                var amenityId = Val(amenity, "amenityId", "id");
+                                var name = Val(amenity, "name", "amenityName");
+
+                                if (!string.IsNullOrWhiteSpace(amenityId))
+                                {
+                                    <option value="@amenityId">@name</option>
+                                }
+                            }
+                        </select>
+
+                        <div class="pin-security-note">
+                            <span data-icon="info"></span>
+                            <span>Your PIN will be valid for a limited time. Generate it when you are ready to enter.</span>
+                        </div>
+
+                        <div id="amenityPinError"
+                             class="text-danger small mt-3"
+                             role="alert"
+                             hidden>
+                        </div>
+
+                        <button type="submit"
+                                id="generateAmenityPinSubmit"
+                                class="btn btn-resident w-100 mt-4">
+
+                            <span data-icon="key" class="mtss-icon-sm"></span>
+                            Generate Secure PIN
+                        </button>
+                    </div>
+
+                    <!-- STEP 2: GENERATED PIN -->
+                    <div id="pinResultView" hidden>
+
+                        <div class="pin-step-indicator">
+                            <span class="pin-step completed">✓</span>
+                            <span class="pin-step-line completed"></span>
+                            <span class="pin-step active">2</span>
+                        </div>
+
+                        <div class="pin-success-heading">
+                            <div class="pin-success-icon">
+                                <span data-icon="check"></span>
+                            </div>
+
+                            <h3>Your access PIN is ready</h3>
+                            <p id="generatedAmenityName">Amenity access</p>
+                        </div>
+
+                        <div class="pin-otp-container">
+                            <div class="pin-otp-label">YOUR SIX-DIGIT ACCESS CODE</div>
+
+                            <div class="pin-otp-digits" id="generatedAmenityPin">
+                                <span>–</span>
+                                <span>–</span>
+                                <span>–</span>
+                                <span>–</span>
+                                <span>–</span>
+                                <span>–</span>
+                            </div>
+
+                            <button type="button"
+                                    id="copyAmenityPin"
+                                    class="pin-copy-button">
+
+                                <span data-icon="copy"></span>
+                                <span id="copyAmenityPinText">Copy PIN</span>
+                            </button>
+                        </div>
+
+                        <div class="amenity-pin-countdown">
+                            <div class="countdown-icon">
+                                <span data-icon="clock"></span>
+                            </div>
+
+                            <div>
+                                <small>PIN expires in</small>
+                                <strong id="amenityPinCountdown">—</strong>
+                            </div>
+                        </div>
+
+                        <div class="pin-instructions">
+                            <span data-icon="shield-check"></span>
+                            <p>Show this PIN at the society entrance and ask the Society Admin to validate it. Do not share it with anyone else.</p>
+                        </div>
+
+                        <button type="button"
+                                class="btn btn-resident w-100 mt-3"
+                                data-bs-dismiss="modal">
+                            Done
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-}
+</div>
 
 @section Scripts {
+    <style>
+        .amenity-section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin: 8px 0 14px;
+        }
+
+        .amenity-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .amenity-card {
+            min-height: 145px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            width: 100%;
+            padding: 18px;
+            text-align: left;
+            border: 1px solid var(--mtss-border-subtle);
+            border-radius: 16px;
+            background: var(--mtss-surface);
+            color: var(--mtss-text);
+            box-shadow: 0 6px 18px rgba(15,23,42,.04);
+            transition: .18s ease;
+        }
+
+        .amenity-card:not(:disabled):hover {
+            transform: translateY(-2px);
+            border-color: var(--mtss-primary);
+            box-shadow: 0 12px 24px rgba(15,23,42,.08);
+        }
+
+        .amenity-card-icon {
+            flex: 0 0 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--mtss-primary-soft);
+            color: var(--mtss-primary);
+        }
+
+        .amenity-card-content {
+            min-width: 0;
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .amenity-card-content strong {
+            font-size: 1rem;
+        }
+
+        .amenity-card-content > span {
+            color: var(--mtss-text-muted);
+            font-size: .86rem;
+            line-height: 1.45;
+        }
+
+        .amenity-card-content small {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: auto;
+            color: var(--mtss-text-muted);
+        }
+
+        .amenity-card-arrow {
+            color: var(--mtss-primary);
+            font-weight: 700;
+        }
+
+        .amenity-history-card {
+            margin-top: 4px;
+        }
+
+        /* MODAL */
+
+        .amenity-pin-modal {
+            border: 0;
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(15,23,42,.22);
+        }
+
+        .amenity-pin-modal .modal-header {
+            padding: 25px 26px 12px;
+        }
+
+        .amenity-pin-modal .modal-body {
+            padding: 14px 26px 26px;
+        }
+
+        .modal-heading-content {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            flex: 0 0 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 15px;
+            background: var(--mtss-primary-soft);
+            color: var(--mtss-primary);
+            font-size: 21px;
+        }
+
+        .amenity-pin-modal .modal-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--mtss-text);
+            margin: 3px 0;
+        }
+
+        .modal-description {
+            margin: 0;
+            color: var(--mtss-text-muted);
+            font-size: .84rem;
+        }
+
+        .amenity-pin-select {
+            min-height: 52px;
+            border-radius: 12px;
+            border-color: var(--mtss-border-subtle);
+            margin-top: 7px;
+        }
+
+        .pin-step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 8px 0 26px;
+        }
+
+        .pin-step {
+            width: 30px;
+            height: 30px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--mtss-surface-muted);
+            color: var(--mtss-text-muted);
+            font-size: .8rem;
+            font-weight: 800;
+        }
+
+        .pin-step.active,
+        .pin-step.completed {
+            background: var(--mtss-primary);
+            color: white;
+        }
+
+        .pin-step-line {
+            width: 65px;
+            height: 2px;
+            background: var(--mtss-border-subtle);
+        }
+
+        .pin-step-line.completed {
+            background: var(--mtss-primary);
+        }
+
+        .pin-security-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            margin-top: 17px;
+            padding: 12px;
+            border-radius: 12px;
+            background: var(--mtss-surface-muted);
+            color: var(--mtss-text-muted);
+            font-size: .82rem;
+            line-height: 1.5;
+        }
+
+        .pin-security-note [data-icon] {
+            flex: 0 0 auto;
+            margin-top: 2px;
+        }
+
+        /* GENERATED PIN */
+
+        .pin-success-heading {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .pin-success-icon {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 12px;
+            border-radius: 50%;
+            background: #e8f7ef;
+            color: #16834a;
+            font-size: 22px;
+        }
+
+        .pin-success-heading h3 {
+            margin: 0 0 5px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--mtss-text);
+        }
+
+        .pin-success-heading p {
+            margin: 0;
+            color: var(--mtss-text-muted);
+            font-size: .88rem;
+        }
+
+        .pin-otp-container {
+            padding: 22px 14px 18px;
+            text-align: center;
+            border: 1px solid var(--mtss-border-subtle);
+            border-radius: 17px;
+            background: var(--mtss-surface-muted);
+        }
+
+        .pin-otp-label {
+            margin-bottom: 15px;
+            color: var(--mtss-text-muted);
+            font-size: .7rem;
+            font-weight: 800;
+            letter-spacing: 1.4px;
+        }
+
+        .pin-otp-digits {
+            display: flex;
+            justify-content: center;
+            gap: 9px;
+        }
+
+        .pin-otp-digits span {
+            width: 43px;
+            height: 53px;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--mtss-border-subtle);
+            border-radius: 10px;
+            background: var(--mtss-surface);
+            color: var(--mtss-primary);
+            font-size: 1.65rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            box-shadow: 0 3px 8px rgba(15,23,42,.04);
+        }
+
+        .pin-copy-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            margin-top: 17px;
+            padding: 8px 15px;
+            border: 1px solid var(--mtss-border-subtle);
+            border-radius: 9px;
+            background: var(--mtss-surface);
+            color: var(--mtss-primary);
+            font-size: .84rem;
+            font-weight: 700;
+        }
+
+        .pin-copy-button:hover {
+            border-color: var(--mtss-primary);
+        }
+
+        .amenity-pin-countdown {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+            padding: 14px;
+            border-radius: 13px;
+            background: var(--mtss-surface-muted);
+        }
+
+        .countdown-icon {
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--mtss-primary-soft);
+            color: var(--mtss-primary);
+        }
+
+        .amenity-pin-countdown small {
+            display: block;
+            color: var(--mtss-text-muted);
+            font-size: .78rem;
+        }
+
+        .amenity-pin-countdown strong {
+            display: block;
+            margin-top: 2px;
+            color: var(--mtss-text);
+            font-size: 1rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pin-instructions {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 14px;
+            padding: 12px;
+            border-radius: 12px;
+            background: #eef4ff;
+            color: #31558d;
+        }
+
+        .pin-instructions [data-icon] {
+            flex: 0 0 auto;
+            margin-top: 2px;
+        }
+
+        .pin-instructions p {
+            margin: 0;
+            font-size: .8rem;
+            line-height: 1.5;
+        }
+
+        @@media (max-width: 575.98px) {
+            .amenity-card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .amenity-section-heading {
+                align-items: flex-end;
+            }
+
+            .amenity-pin-modal .modal-header {
+                padding: 20px 18px 10px;
+            }
+
+            .amenity-pin-modal .modal-body {
+                padding: 12px 18px 20px;
+            }
+
+            .pin-otp-digits {
+                gap: 5px;
+            }
+
+            .pin-otp-digits span {
+                width: 39px;
+                height: 49px;
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+
     <script>
         (function () {
             const search = document.getElementById('pinSearch');
             const filter = document.getElementById('pinStatusFilter');
-            function apply() {
-                const q = (search?.value || '').toLowerCase();
-                const st = (filter?.value || '').toLowerCase();
-                document.querySelectorAll('#pinRows tr').forEach(r => {
-                    const matchQ = !q || r.innerText.toLowerCase().includes(q);
-                    const matchS = !st || r.dataset.status === st;
-                    r.hidden = !(matchQ && matchS);
+
+            const modalElement = document.getElementById('amenityPinModal');
+            const form = document.getElementById('generateAmenityPinForm');
+            const select = document.getElementById('amenityId');
+
+            const selectionView = document.getElementById('pinSelectionView');
+            const resultView = document.getElementById('pinResultView');
+
+            const error = document.getElementById('amenityPinError');
+            const submit = document.getElementById('generateAmenityPinSubmit');
+
+            const pinLabel = document.getElementById('generatedAmenityPin');
+            const nameLabel = document.getElementById('generatedAmenityName');
+            const countdownLabel = document.getElementById('amenityPinCountdown');
+
+            const copyButton = document.getElementById('copyAmenityPin');
+            const copyButtonText = document.getElementById('copyAmenityPinText');
+
+            let countdownTimer = null;
+            let generatedPin = '';
+
+            /*
+             * IMPORTANT MODAL FIX:
+             *
+             * Move the modal directly under <body>.
+             * This prevents parent containers with transform,
+             * filter, opacity or their own stacking context
+             * from placing the Bootstrap backdrop above the modal.
+             */
+            if (modalElement && modalElement.parentElement !== document.body) {
+                document.body.appendChild(modalElement);
+            }
+
+            function applyFilters() {
+                const query = (search?.value || '').toLowerCase();
+                const status = (filter?.value || '').toLowerCase();
+
+                document.querySelectorAll('#pinRows tr').forEach(row => {
+                    const matchesQuery =
+                        !query || row.innerText.toLowerCase().includes(query);
+
+                    const matchesStatus =
+                        !status || row.dataset.status === status;
+
+                    row.hidden = !(matchesQuery && matchesStatus);
                 });
             }
-            search?.addEventListener('input', apply);
-            filter?.addEventListener('change', apply);
+
+            function resetModal() {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+                generatedPin = '';
+
+                selectionView.hidden = false;
+                resultView.hidden = true;
+
+                error.hidden = true;
+                error.textContent = '';
+
+                submit.disabled = false;
+                submit.innerHTML =
+                    '<span data-icon="key" class="mtss-icon-sm"></span> Generate Secure PIN';
+
+                form.reset();
+
+                document.getElementById('amenityModalDescription').textContent =
+                    'Select the facility you want to access.';
+
+                copyButtonText.textContent = 'Copy PIN';
+            }
+
+            function readProperty(data, keys) {
+                for (const key of keys) {
+                    if (data && data[key] !== null && data[key] !== undefined) {
+                        return data[key];
+                    }
+                }
+
+                return '';
+            }
+
+            function displayPin(pin) {
+                pinLabel.replaceChildren();
+
+                for (const digit of pin) {
+                    const element = document.createElement('span');
+                    element.textContent = digit;
+                    pinLabel.appendChild(element);
+                }
+            }
+
+            function startCountdown(expiresAt) {
+                clearInterval(countdownTimer);
+
+                const expiry = Date.parse(expiresAt);
+
+                if (!expiresAt || Number.isNaN(expiry)) {
+                    countdownLabel.textContent = 'Expiry unavailable';
+                    return;
+                }
+
+                function tick() {
+                    const remaining = Math.floor((expiry - Date.now()) / 1000);
+
+                    if (remaining <= 0) {
+                        countdownLabel.textContent = 'Expired';
+                        clearInterval(countdownTimer);
+                        countdownTimer = null;
+                        return;
+                    }
+
+                    const minutes = Math.floor(remaining / 60);
+                    const seconds = remaining % 60;
+
+                    countdownLabel.textContent =
+                        `${minutes}m ${seconds.toString().padStart(2, '0')}s remaining`;
+                }
+
+                tick();
+                countdownTimer = setInterval(tick, 1000);
+            }
+
+            search?.addEventListener('input', applyFilters);
+            filter?.addEventListener('change', applyFilters);
+
+            /*
+             * Open modal from amenity cards.
+             * The modal is already attached to body above.
+             */
+            document.querySelectorAll('.amenity-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const id = card.dataset.amenityId;
+
+                    if (!id || !select || !modalElement) return;
+
+                    select.value = id;
+
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                    modal.show();
+                });
+            });
+
+            /*
+             * Reset form only after modal is completely closed.
+             */
+            modalElement?.addEventListener('hidden.bs.modal', resetModal);
+
+            /*
+             * Generate PIN
+             */
+            form?.addEventListener('submit', async event => {
+                event.preventDefault();
+
+                if (!select.value) {
+                    error.textContent = 'Please select an amenity.';
+                    error.hidden = false;
+                    select.focus();
+                    return;
+                }
+
+                submit.disabled = true;
+                submit.textContent = 'Generating your PIN...';
+                error.hidden = true;
+
+                const token = form.querySelector(
+                    '[name="__RequestVerificationToken"]'
+                )?.value;
+
+                try {
+                    const body = new URLSearchParams();
+                    body.set('amenityId', select.value);
+
+                    if (token) {
+                        body.set('__RequestVerificationToken', token);
+                    }
+
+                    const response = await fetch(
+                        '@Url.Action("GeneratePinModal", "Resident")',
+                        {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'RequestVerificationToken': token || ''
+                            },
+                            body
+                        }
+                    );
+
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                        return;
+                    }
+
+                    const contentType =
+                        response.headers.get('content-type') || '';
+
+                    if (!contentType.includes('application/json')) {
+                        throw new Error(
+                            'Unexpected server response. Please sign in again and retry.'
+                        );
+                    }
+
+                    const payload = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            payload.message || 'PIN generation failed.'
+                        );
+                    }
+
+                    const pin = String(
+                        readProperty(payload, ['pin', 'pinCode', 'code'])
+                    );
+
+                    const amenityName = String(
+                        readProperty(payload, ['amenityName', 'name']) || 'Amenity'
+                    );
+
+                    const expiresAt = String(
+                        readProperty(payload, ['expiresAt'])
+                    );
+
+                    if (!/^\d{6}$/.test(pin)) {
+                        throw new Error(
+                            'The server did not return a valid six-digit PIN.'
+                        );
+                    }
+
+                    generatedPin = pin;
+
+                    displayPin(pin);
+                    nameLabel.textContent = amenityName;
+
+                    selectionView.hidden = true;
+                    resultView.hidden = false;
+
+                    document.getElementById('amenityModalDescription').textContent =
+                        'Your secure access code has been generated.';
+
+                    startCountdown(expiresAt);
+
+                } catch (exception) {
+                    error.textContent =
+                        exception.message || 'Unable to generate the PIN.';
+
+                    error.hidden = false;
+
+                    submit.disabled = false;
+                    submit.innerHTML =
+                        '<span data-icon="key" class="mtss-icon-sm"></span> Generate Secure PIN';
+                }
+            });
+
+            /*
+             * Copy generated PIN
+             */
+            copyButton?.addEventListener('click', async () => {
+                if (!generatedPin) return;
+
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(generatedPin);
+                    } else {
+                        const temporaryInput =
+                            document.createElement('textarea');
+
+                        temporaryInput.value = generatedPin;
+                        temporaryInput.style.position = 'fixed';
+                        temporaryInput.style.opacity = '0';
+
+                        document.body.appendChild(temporaryInput);
+                        temporaryInput.select();
+
+                        const copied = document.execCommand('copy');
+                        temporaryInput.remove();
+
+                        if (!copied) {
+                            throw new Error('Copy failed');
+                        }
+                    }
+
+                    copyButtonText.textContent = 'Copied!';
+
+                    setTimeout(() => {
+                        copyButtonText.textContent = 'Copy PIN';
+                    }, 2000);
+
+                } catch {
+                    copyButtonText.textContent = 'Unable to copy';
+                }
+            });
+
         })();
     </script>
 }

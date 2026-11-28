@@ -1,5 +1,7 @@
 
 @using System.Text.Json
+@using System.Globalization
+
 @{
     ViewData["Title"] = ViewBag.Title ?? "Society Management";
     var module = (string)ViewBag.Module;
@@ -17,18 +19,52 @@
     string Prop(JsonElement row, params string[] keys)
     {
         if (row.ValueKind != JsonValueKind.Object) return "";
-        foreach (var k in keys)
+
+        foreach (var key in keys)
         {
-            if (row.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null)
-                return v.ToString();
+            foreach (var property in row.EnumerateObject())
+            {
+                if (property.Name.Equals(key, StringComparison.OrdinalIgnoreCase) &&
+                    property.Value.ValueKind != JsonValueKind.Null &&
+                    property.Value.ValueKind != JsonValueKind.Undefined)
+                {
+                    return property.Value.ValueKind == JsonValueKind.String
+                        ? property.Value.GetString() ?? ""
+                        : property.Value.ToString();
+                }
+            }
         }
+
         return "";
     }
 
     string Value(JsonElement row, string key)
     {
-        var v = Prop(row, key);
-        return string.IsNullOrEmpty(v) ? "—" : v;
+        var value = Prop(row, key);
+        return string.IsNullOrWhiteSpace(value) ? "—" : value;
+    }
+
+    bool IsTrue(string value)
+    {
+        return value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+               value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+               value.Equals("yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    string FormatDate(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return "—";
+
+        if (DateTimeOffset.TryParse(
+            value,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal,
+            out var date))
+        {
+            return date.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt");
+        }
+
+        return value;
     }
 
     string RecordId(JsonElement row)
@@ -59,54 +95,428 @@
         return "—";
     }
 
-    var wingNames = wings.ToDictionary(w => Prop(w, "wingId", "id"), w => Prop(w, "name"));
-    var floorNames = floors.ToDictionary(
-        f => Prop(f, "floorId", "id"),
-        f =>
-        {
-            var wName = Prop(f, "wingName");
-            if (string.IsNullOrEmpty(wName)) wingNames.TryGetValue(Prop(f, "wingId"), out wName);
-            var fName = Prop(f, "name");
-            return string.IsNullOrEmpty(wName) ? fName : $"{wName} — {fName}";
-        });
-    var flatNames = flats.ToDictionary(
-        fl => Prop(fl, "flatId", "id"),
-        fl =>
-        {
-            var flNum = Prop(fl, "flatNumber");
-            var fId = Prop(fl, "floorId");
-            return floorNames.TryGetValue(fId, out var flLabel) && !string.IsNullOrEmpty(flLabel)
-                ? $"{flLabel} — {flNum}"
-                : flNum;
-        });
-    var residentNames = residents.ToDictionary(r => Prop(r, "residentProfileId", "id"), r => Prop(r, "fullName"));
-    var amenityNames = amenities.ToDictionary(a => Prop(a, "amenityId", "id"), a => Prop(a, "name"));
+    var wingNames = wings
+        .Where(w => !string.IsNullOrWhiteSpace(Prop(w, "wingId", "id")))
+        .GroupBy(w => Prop(w, "wingId", "id"))
+        .ToDictionary(g => g.Key, g => Prop(g.First(), "name"));
 
-    string DisplayField(JsonElement row, string f)
+    var floorNames = floors
+        .Where(f => !string.IsNullOrWhiteSpace(Prop(f, "floorId", "id")))
+        .GroupBy(f => Prop(f, "floorId", "id"))
+        .ToDictionary(
+            g => g.Key,
+            g =>
+            {
+                var floor = g.First();
+                var wingName = Prop(floor, "wingName");
+
+                if (string.IsNullOrEmpty(wingName))
+                    wingNames.TryGetValue(Prop(floor, "wingId"), out wingName);
+
+                var floorName = Prop(floor, "name");
+
+                return string.IsNullOrEmpty(wingName)
+                    ? floorName
+                    : $"{wingName} — {floorName}";
+            });
+
+    var flatNames = flats
+        .Where(fl => !string.IsNullOrWhiteSpace(Prop(fl, "flatId", "id")))
+        .GroupBy(fl => Prop(fl, "flatId", "id"))
+        .ToDictionary(
+            g => g.Key,
+            g =>
+            {
+                var flat = g.First();
+                var flatNumber = Prop(flat, "flatNumber");
+                var floorId = Prop(flat, "floorId");
+
+                return floorNames.TryGetValue(floorId, out var floorLabel) &&
+                       !string.IsNullOrEmpty(floorLabel)
+                    ? $"{floorLabel} — {flatNumber}"
+                    : flatNumber;
+            });
+
+    var residentNames = residents
+        .Where(r => !string.IsNullOrWhiteSpace(Prop(r, "residentProfileId", "id")))
+        .GroupBy(r => Prop(r, "residentProfileId", "id"))
+        .ToDictionary(g => g.Key, g => Prop(g.First(), "fullName"));
+
+    var amenityNames = amenities
+        .Where(a => !string.IsNullOrWhiteSpace(Prop(a, "amenityId", "id")))
+        .GroupBy(a => Prop(a, "amenityId", "id"))
+        .ToDictionary(g => g.Key, g => Prop(g.First(), "name"));
+
+    string DisplayField(JsonElement row, string field)
     {
-        var raw = Prop(row, f);
-        if (f == "wingId")
-            return wingNames.GetValueOrDefault(raw) ?? (string.IsNullOrEmpty(raw) ? "—" : $"Wing #{raw}");
-        if (f == "floorId")
-            return floorNames.GetValueOrDefault(raw) ?? (string.IsNullOrEmpty(raw) ? "—" : $"Floor #{raw}");
-        if (f == "flatId")
-            return flatNames.GetValueOrDefault(raw) ?? (string.IsNullOrEmpty(raw) ? "—" : $"Flat #{raw}");
-        if (f == "residentProfileId")
-            return residentNames.GetValueOrDefault(raw) ?? (string.IsNullOrEmpty(raw) ? "—" : $"Resident #{raw}");
-        if (f == "amenityId")
-            return amenityNames.GetValueOrDefault(raw) ?? (string.IsNullOrEmpty(raw) ? "—" : $"Amenity #{raw}");
-        if (f == "userId")
+        // Never expose a PIN or its stored hash in a table.
+        if (field.Contains("pin", StringComparison.OrdinalIgnoreCase))
+            return "Protected";
+
+        var raw = Prop(row, field);
+
+        if (field.Equals("wingId", StringComparison.OrdinalIgnoreCase))
+            return wingNames.GetValueOrDefault(raw) ??
+                (string.IsNullOrEmpty(raw) ? "—" : $"Wing #{raw}");
+
+        if (field.Equals("floorId", StringComparison.OrdinalIgnoreCase))
+            return floorNames.GetValueOrDefault(raw) ??
+                (string.IsNullOrEmpty(raw) ? "—" : $"Floor #{raw}");
+
+        if (field.Equals("flatId", StringComparison.OrdinalIgnoreCase))
+            return flatNames.GetValueOrDefault(raw) ??
+                (string.IsNullOrEmpty(raw) ? "—" : $"Flat #{raw}");
+
+        if (field.Equals("residentProfileId", StringComparison.OrdinalIgnoreCase))
+            return residentNames.GetValueOrDefault(raw) ??
+                (string.IsNullOrEmpty(raw) ? "—" : $"Resident #{raw}");
+
+        if (field.Equals("amenityId", StringComparison.OrdinalIgnoreCase))
+        {
+            var amenityName = Prop(row, "amenityName");
+
+            if (!string.IsNullOrWhiteSpace(amenityName))
+                return amenityName;
+
+            return amenityNames.GetValueOrDefault(raw) ??
+                (string.IsNullOrEmpty(raw) ? "—" : $"Amenity #{raw}");
+        }
+
+        if (field.Equals("userId", StringComparison.OrdinalIgnoreCase))
         {
             if (string.IsNullOrEmpty(raw)) return "General / All";
-            var match = residents.FirstOrDefault(r => Prop(r, "applicationUserId", "userId") == raw);
-            return match.ValueKind == JsonValueKind.Object ? Prop(match, "fullName") : raw;
+
+            var match = residents.FirstOrDefault(r =>
+                Prop(r, "applicationUserId", "userId") == raw);
+
+            return match.ValueKind == JsonValueKind.Object
+                ? Prop(match, "fullName")
+                : raw;
         }
+
         return string.IsNullOrEmpty(raw) ? "—" : raw;
     }
 
-    var isBooleanStatusModule = module is "wings" or "floors" or "flats" or "residents" or "amenities";
-    var showWingFilter = (module is "floors" or "flats") && wings.Count > 0;
+    string AmenityDisplay(JsonElement row)
+    {
+        var name = Prop(row, "amenityName");
+        if (!string.IsNullOrWhiteSpace(name)) return name;
+
+        var id = Prop(row, "amenityId");
+
+        return amenityNames.GetValueOrDefault(id) ??
+            (string.IsNullOrWhiteSpace(id) ? "—" : $"Amenity #{id}");
+    }
+
+    string AmenityDetails(JsonElement row)
+    {
+        if (module == "amenity-pins")
+        {
+            var generated = FormatDate(Prop(row, "generatedAt", "createdAt"));
+            var expires = FormatDate(Prop(row, "expiresAt", "expiryAt"));
+            var used = FormatDate(Prop(row, "usedAt"));
+
+            var pinDetails = $"Generated: {generated} · Expires: {expires}";
+
+            if (used != "—")
+                pinDetails += $" · Used: {used}";
+
+            return pinDetails;
+        }
+
+        var accessed = FormatDate(Prop(
+            row,
+            "accessedAt",
+            "attemptedAt",
+            "validatedAt",
+            "createdAt",
+            "timestamp"));
+
+        var result = Prop(
+            row,
+            "result",
+            "accessResult",
+            "validationResult",
+            "status");
+
+        if (string.IsNullOrWhiteSpace(result))
+        {
+            var valid = Prop(row, "isValid", "isSuccessful", "success");
+
+            if (!string.IsNullOrWhiteSpace(valid))
+                result = IsTrue(valid) ? "Successful" : "Denied";
+        }
+
+        if (string.IsNullOrWhiteSpace(result))
+            result = "—";
+
+        var logDetails = $"Accessed: {accessed} · Result: {result}";
+
+        var reason = Prop(
+            row,
+            "failureReason",
+            "reason",
+            "message",
+            "remarks");
+
+        if (!string.IsNullOrWhiteSpace(reason))
+            logDetails += $" · Reason: {reason}";
+
+        return logDetails;
+    }
+
+    string AmenityStatus(JsonElement row)
+    {
+        if (module == "amenity-pins")
+        {
+            var status = Prop(row, "status");
+
+            if (!string.IsNullOrWhiteSpace(status))
+                return status;
+
+            if (!string.IsNullOrWhiteSpace(Prop(row, "usedAt")))
+                return "Used";
+
+            if (DateTimeOffset.TryParse(
+                Prop(row, "expiresAt", "expiryAt"),
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal,
+                out var expiry) && expiry <= DateTimeOffset.UtcNow)
+                return "Expired";
+
+            return "Active";
+        }
+
+        var result = Prop(row, "result", "accessResult", "validationResult", "status");
+
+        if (!string.IsNullOrWhiteSpace(result))
+            return result;
+
+        var valid = Prop(row, "isValid", "isSuccessful", "success");
+
+        if (!string.IsNullOrWhiteSpace(valid))
+            return IsTrue(valid) ? "Successful" : "Denied";
+
+        return "—";
+    }
+
+    var isBooleanStatusModule =
+        module is "wings" or "floors" or "flats" or "residents" or "amenities";
+
+    var showWingFilter =
+        (module is "floors" or "flats") && wings.Count > 0;
+
+    var visibleFieldIndexes = fields
+        .Select((field, index) => new { field, index })
+        .Where(x => !x.field.Contains("pin", StringComparison.OrdinalIgnoreCase))
+        .ToList();
 }
+
+<style>
+    .sa-module-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: #29231e;
+        font-size: .875rem;
+    }
+
+    .sa-module-table thead th {
+        padding: 14px 16px;
+        background: #f8f7f5;
+        color: #62584f;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .045em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        border-bottom: 1px solid #e9e5df;
+    }
+
+    .sa-module-table tbody td {
+        padding: 15px 16px;
+        vertical-align: middle;
+        background: #fff;
+        color: #3f3933;
+        border-bottom: 1px solid #eeeae5;
+    }
+
+    .sa-module-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .sa-module-table tbody tr:hover td {
+        background: #faf9f7;
+    }
+
+    .sa-module-table .sa-record-id {
+        color: #786b5e;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .sa-module-table .sa-details {
+        min-width: 260px;
+        max-width: 440px;
+        color: #62584f;
+        font-size: .8rem;
+        line-height: 1.6;
+    }
+
+    .sa-module-table .sa-actions-cell {
+        width: 1%;
+        min-width: 120px;
+        white-space: normal;
+        text-align: right;
+    }
+
+    .sa-module-table .sa-actions-cell .btn {
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .sa-module-table .btn-outline-primary {
+        color: #315f9c;
+        border-color: #b8c9df;
+        background: #fff;
+    }
+
+    .sa-module-table .btn-outline-primary:hover {
+        color: #fff;
+        border-color: #315f9c;
+        background: #315f9c;
+    }
+
+    .sa-module-table .btn-outline-secondary {
+        color: #51483f;
+        border-color: #cfc7bd;
+        background: #fff;
+    }
+
+    .sa-module-table .btn-outline-secondary:hover {
+        color: #fff;
+        border-color: #51483f;
+        background: #51483f;
+    }
+
+    .sa-module-table .btn-outline-success {
+        color: #236b48;
+        border-color: #a9cdb9;
+        background: #fff;
+    }
+
+    .sa-module-table .btn-outline-success:hover {
+        color: #fff;
+        border-color: #236b48;
+        background: #236b48;
+    }
+
+    .sa-module-table .form-control,
+    .sa-module-table .form-select {
+        min-width: 0;
+        border-color: #dcd6ce;
+        color: #29231e;
+        background-color: #fff;
+        font-size: .8rem;
+    }
+
+    .sa-module-table .form-control:focus,
+    .sa-module-table .form-select:focus {
+        border-color: #7895b8;
+        box-shadow: 0 0 0 .15rem rgba(49, 95, 156, .12);
+    }
+
+    .sa-module-table .sa-action-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .sa-module-table .sa-action-form {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+
+    .sa-module-table .sa-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .sa-status-active,
+    .sa-status-success {
+        color: #216344;
+        background: #e8f4ed;
+    }
+
+    .sa-status-inactive,
+    .sa-status-neutral {
+        color: #62584f;
+        background: #f0eeeb;
+    }
+
+    .sa-status-warning {
+        color: #865b16;
+        background: #fff3d9;
+    }
+
+    .sa-status-danger {
+        color: #9b3535;
+        background: #fbeaea;
+    }
+
+    .sa-module-table .sa-complaint-description {
+        min-width: 180px;
+        max-width: 280px;
+        white-space: normal;
+        line-height: 1.5;
+    }
+
+    .sa-empty-state {
+        padding: 48px 20px;
+        text-align: center;
+        color: #71675e;
+    }
+
+    .sa-empty-state strong {
+        display: block;
+        margin: 10px 0 4px;
+        color: #342d27;
+    }
+
+    .sa-empty-state > span:last-child {
+        font-size: .85rem;
+    }
+
+    @@media (max-width: 767px) {
+        .sa-module-table thead th,
+        .sa-module-table tbody td {
+            padding: 12px;
+        }
+
+        .sa-module-table .sa-actions-cell {
+            min-width: 150px;
+        }
+
+        .sa-module-table .sa-action-form {
+            justify-content: flex-start;
+        }
+
+        .sa-module-table .sa-action-stack {
+            align-items: flex-start;
+        }
+    }
+</style>
 
 <div>
     <div class="mtss-page-header">
@@ -115,19 +525,40 @@
             <h1 class="mtss-page-title">@ViewBag.Title</h1>
             <p class="mtss-page-subtitle">Manage records for your society.</p>
         </div>
+
         @if (fields.Length > 0)
         {
-            <a class="btn btn-primary" asp-action="Create" asp-route-module="@module"><span data-icon="plus" class="mtss-icon-sm"></span> Add @ViewBag.Title</a>
+            <a class="btn btn-primary"
+               asp-action="Create"
+               asp-route-module="@module">
+                <span data-icon="plus" class="mtss-icon-sm"></span>
+                Add @ViewBag.Title
+            </a>
         }
     </div>
 
-    @if (TempData["Success"] != null) { <div class="alert alert-success mtss-alert">@TempData["Success"]</div> }
-    @if (TempData["Error"] != null) { <div class="alert alert-danger mtss-alert">@TempData["Error"]</div> }
-    @if (ViewBag.ErrorMessage != null) { <div class="alert alert-warning mtss-alert">@ViewBag.ErrorMessage</div> }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success mtss-alert">@TempData["Success"]</div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger mtss-alert">@TempData["Error"]</div>
+    }
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-warning mtss-alert">@ViewBag.ErrorMessage</div>
+    }
 
     <div class="mtss-card">
         <div class="mtss-toolbar">
-            <h2 class="h6 fw-bold mb-0">Records <span class="badge text-bg-light ms-1">@rows.Count</span></h2>
+            <h2 class="h6 fw-bold mb-0">
+                Records
+                <span class="badge text-bg-light ms-1">@rows.Count</span>
+            </h2>
+
             <div class="mtss-toolbar-controls">
                 @if (showWingFilter)
                 {
@@ -139,15 +570,21 @@
                         }
                     </select>
                 }
-                <input id="tableSearch" class="form-control sa-search-input" placeholder="Search records..." aria-label="Search records" />
+
+                <input id="tableSearch"
+                       class="form-control sa-search-input"
+                       placeholder="Search records..."
+                       aria-label="Search records" />
             </div>
         </div>
-        <div class="p-0">
 
+        <div class="p-0">
             @if (rows.Count == 0)
             {
                 <div class="sa-empty-state">
-                    <span class="mtss-empty-icon"><span data-icon="inbox"></span></span>
+                    <span class="mtss-empty-icon">
+                        <span data-icon="inbox"></span>
+                    </span>
                     <strong>No records found</strong>
                     <span>Create your first record if this module supports creation.</span>
                 </div>
@@ -155,140 +592,259 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle sa-data-table">
+                    <table class="table table-hover align-middle sa-data-table sa-module-table">
                         <thead>
                             <tr>
                                 <th>Record</th>
-                                @for (var i = 0; i < fields.Length; i++)
+
+                                @foreach (var item in visibleFieldIndexes)
                                 {
-                                    <th>@(i < labels.Length ? labels[i] : fields[i])</th>
+                                    <th>@(item.index < labels.Length ? labels[item.index] : item.field)</th>
                                 }
-                                @if (module == "flats") { <th>Occupancy</th> }
-                                @if (module == "residents") { <th>Presence</th> }
-                                @if (module == "complaints") { <th>Subject</th><th>Description</th><th>Admin remarks</th> }
-                                @if (module == "amenity-pins" || module == "amenity-logs") { <th>Amenity</th><th>Details</th> }
+
+                                @if (module == "flats")
+                                {
+                                    <th>Occupancy</th>
+                                }
+
+                                @if (module == "residents")
+                                {
+                                    <th>Presence</th>
+                                }
+
+                                @if (module == "complaints")
+                                {
+                                    <th>Subject</th>
+                                    <th>Description</th>
+                                    <th>Admin remarks</th>
+                                }
+
+                                @if (module is "amenity-pins" or "amenity-logs")
+                                {
+                                    <th>Amenity</th>
+                                    <th>Details</th>
+                                }
+
                                 <th>Status</th>
-                                <th class="text-end">Actions</th>
+                                <th class="sa-actions-cell">Actions</th>
                             </tr>
                         </thead>
+
                         <tbody id="dataRows">
                             @foreach (var row in rows)
                             {
                                 var id = RecordId(row);
-                                var isActive = Value(row, "isActive").Equals("True", StringComparison.OrdinalIgnoreCase);
+                                var isActive = IsTrue(Prop(row, "isActive"));
                                 var statusText = Value(row, "status");
+
                                 var isTerminalComplaint =
                                     module == "complaints" &&
                                     (statusText.Equals("Resolved", StringComparison.OrdinalIgnoreCase) ||
                                      statusText.Equals("Rejected", StringComparison.OrdinalIgnoreCase));
 
                                 <tr>
-                                    <td class="fw-semibold sa-record-id" data-label="Record">#@id</td>
-                                    @for (var i = 0; i < fields.Length; i++)
+                                    <td class="sa-record-id">#@id</td>
+
+                                    @foreach (var item in visibleFieldIndexes)
                                     {
-                                        <td data-label="@(i < labels.Length ? labels[i] : fields[i])">@DisplayField(row, fields[i])</td>
+                                        <td data-label="@(item.index < labels.Length ? labels[item.index] : item.field)">
+                                            @DisplayField(row, item.field)
+                                        </td>
                                     }
 
                                     @if (module == "flats")
                                     {
-                                        var occupied = Value(row, "isOccupied").Equals("True", StringComparison.OrdinalIgnoreCase);
-                                        <td data-label="Occupancy"><span class="badge rounded-pill @(occupied ? "text-bg-primary" : "text-bg-light")">@(occupied ? "Occupied" : "Vacant")</span></td>
-                                    }
-                                    @if (module == "residents")
-                                    {
-                                        var isHome = Value(row, "isHome").Equals("True", StringComparison.OrdinalIgnoreCase);
-                                        <td data-label="Presence"><span class="badge rounded-pill @(isHome ? "text-bg-info" : "text-bg-secondary")">@(isHome ? "Home" : "Away")</span></td>
-                                    }
-                                    @if (module == "complaints")
-                                    {
-                                        <td data-label="Subject">@Value(row, "subject")</td>
-                                        <td data-label="Description" class="small text-secondary">@Value(row, "description")</td>
-                                        <td data-label="Admin remarks" class="small">@Value(row, "adminRemarks")</td>
-                                    }
-                                    @if (module == "amenity-pins" || module == "amenity-logs")
-                                    {
-                                        <td data-label="Amenity">@DisplayField(row, "amenityId")</td>
-                                        <td data-label="Details" class="small">@(module == "amenity-pins" ? $"PIN: {Value(row, "pinCode")} | Expires: {Value(row, "expiresAt")}" : $"Accessed: {Value(row, "accessedAt")} | Valid: {Value(row, "isValid")}")</td>
+                                        var occupied = IsTrue(Prop(row, "isOccupied"));
+
+                                        <td>
+                                            <span class="sa-status @(occupied ? "sa-status-success" : "sa-status-neutral")">
+                                                @(occupied ? "Occupied" : "Vacant")
+                                            </span>
+                                        </td>
                                     }
 
-                                    <td data-label="Status">
+                                    @if (module == "residents")
+                                    {
+                                        var isHome = IsTrue(Prop(row, "isHome"));
+
+                                        <td>
+                                            <span class="sa-status @(isHome ? "sa-status-success" : "sa-status-neutral")">
+                                                @(isHome ? "Home" : "Away")
+                                            </span>
+                                        </td>
+                                    }
+
+                                    @if (module == "complaints")
+                                    {
+                                        <td>@Value(row, "subject")</td>
+
+                                        <td class="sa-complaint-description">
+                                            @Value(row, "description")
+                                        </td>
+
+                                        <td class="sa-complaint-description">
+                                            @Value(row, "adminRemarks")
+                                        </td>
+                                    }
+
+                                    @if (module is "amenity-pins" or "amenity-logs")
+                                    {
+                                        <td>@AmenityDisplay(row)</td>
+                                        <td class="sa-details">@AmenityDetails(row)</td>
+                                    }
+
+                                    <td>
                                         @if (isBooleanStatusModule)
                                         {
-                                            <span class="badge rounded-pill @(isActive ? "text-bg-success" : "text-bg-secondary")">@(isActive ? "Active" : "Inactive")</span>
+                                            <span class="sa-status @(isActive ? "sa-status-active" : "sa-status-neutral")">
+                                                @(isActive ? "Active" : "Inactive")
+                                            </span>
+                                        }
+                                        else if (module is "amenity-pins" or "amenity-logs")
+                                        {
+                                            var amenityStatus = AmenityStatus(row);
+                                            var statusLower = amenityStatus.ToLowerInvariant();
+
+                                            var statusClass =
+                                                statusLower.Contains("success") ||
+                                                statusLower.Contains("valid") ||
+                                                statusLower == "active" ||
+                                                statusLower == "granted"
+                                                    ? "sa-status-success"
+                                                    : statusLower.Contains("denied") ||
+                                                      statusLower.Contains("invalid") ||
+                                                      statusLower.Contains("fail") ||
+                                                      statusLower == "expired"
+                                                        ? "sa-status-danger"
+                                                        : statusLower == "used"
+                                                            ? "sa-status-warning"
+                                                            : "sa-status-neutral";
+
+                                            <span class="sa-status @statusClass">@amenityStatus</span>
                                         }
                                         else
                                         {
-                                            <span class="badge rounded-pill text-bg-light">@statusText</span>
+                                            <span class="sa-status sa-status-neutral">@statusText</span>
                                         }
                                     </td>
 
-                                    <td data-label="Actions">
-                                        @if (module == "residents")
-                                        {
-                                            <div class="d-flex flex-column align-items-start gap-2 mb-2">
-                                                <form asp-action="CreateResidentAccount" method="post" class="d-flex gap-1">
+                                    <td class="sa-actions-cell">
+                                        <div class="sa-action-stack">
+                                            @if (module == "residents")
+                                            {
+                                                <form asp-action="CreateResidentAccount"
+                                                      method="post"
+                                                      class="sa-action-form">
                                                     @Html.AntiForgeryToken()
+
                                                     <input type="hidden" name="id" value="@id" />
-                                                    <input name="email" type="email" class="form-control form-control-sm" placeholder="Login email" required style="max-width:140px" aria-label="Resident login email" />
-                                                    <input name="password" type="password" class="form-control form-control-sm" placeholder="Temp password" required style="max-width:120px" aria-label="Temporary password" />
-                                                    <button class="btn btn-sm btn-outline-success">Create login</button>
+
+                                                    <input name="email"
+                                                           type="email"
+                                                           class="form-control form-control-sm"
+                                                           placeholder="Login email"
+                                                           required
+                                                           style="max-width:150px"
+                                                           aria-label="Resident login email" />
+
+                                                    <input name="password"
+                                                           type="password"
+                                                           class="form-control form-control-sm"
+                                                           placeholder="Temp password"
+                                                           required
+                                                           style="max-width:130px"
+                                                           aria-label="Temporary password" />
+
+                                                    <button class="btn btn-sm btn-outline-success">
+                                                        Create login
+                                                    </button>
                                                 </form>
-                                                <form asp-action="LinkResidentAccount" method="post" class="d-flex gap-1">
+
+                                                <form asp-action="LinkResidentAccount"
+                                                      method="post"
+                                                      class="sa-action-form">
                                                     @Html.AntiForgeryToken()
+
                                                     <input type="hidden" name="id" value="@id" />
-                                                    <input name="applicationUserId" type="text" class="form-control form-control-sm" placeholder="Existing User ID" required style="max-width:170px" aria-label="Existing user ID" />
-                                                    <button class="btn btn-sm btn-outline-secondary">Link account</button>
+
+                                                    <input name="applicationUserId"
+                                                           type="text"
+                                                           class="form-control form-control-sm"
+                                                           placeholder="Existing User ID"
+                                                           required
+                                                           style="max-width:170px"
+                                                           aria-label="Existing user ID" />
+
+                                                    <button class="btn btn-sm btn-outline-secondary">
+                                                        Link account
+                                                    </button>
                                                 </form>
-                                            </div>
-                                        }
+                                            }
 
-                                        @if (allowEdit && fields.Length > 0)
-                                        {
-                                            <a asp-action="Edit" asp-route-module="@module" asp-route-id="@id" class="btn btn-sm btn-outline-primary">Edit</a>
-                                        }
+                                            @if (allowEdit && fields.Length > 0)
+                                            {
+                                                <a asp-action="Edit"
+                                                   asp-route-module="@module"
+                                                   asp-route-id="@id"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    Edit
+                                                </a>
+                                            }
 
-                                        @if (module == "complaints" && !isTerminalComplaint)
-                                        {
-                                            <form asp-action="UpdateStatus" method="post" class="d-inline-flex flex-wrap gap-1">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="module" value="@module" />
-                                                <input type="hidden" name="id" value="@id" />
-                                                <select name="status" class="form-select form-select-sm">
-                                                    @foreach (var s in new[] { "InProgress", "Resolved", "Rejected" })
-                                                    {
-                                                        var selected = statusText.Equals(s, StringComparison.OrdinalIgnoreCase) ||
-                                                            (statusText.Equals("Open", StringComparison.OrdinalIgnoreCase) && s == "InProgress");
-                                                        <option value="@s" selected="@(selected ? "selected" : null)">@s</option>
-                                                    }
-                                                </select>
-                                                <input name="adminRemarks" value="@Prop(row, "adminRemarks")" class="form-control form-control-sm" placeholder="Admin remarks" style="max-width:140px" />
-                                                <button class="btn btn-sm btn-outline-primary">Update</button>
-                                            </form>
-                                        }
-                                       
-                                        else if (module == "parcels")
-                                        {
-                                            var isCollected = statusText.Equals("Collected", StringComparison.OrdinalIgnoreCase);
-                                            <form asp-action="UpdateStatus" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="module" value="@module" />
-                                                <input type="hidden" name="id" value="@id" />
-                                                <input type="hidden" name="status" value="Collected" />
-                                                <button class="btn btn-sm btn-outline-primary" disabled="@(isCollected ? "disabled" : null)">
-                                                    @(isCollected ? "Collected" : "Mark Collected")
-                                                </button>
-                                            </form>
-                                        }
-                                        else if (isBooleanStatusModule)
-                                        {
-                                            <form asp-action="UpdateStatus" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="module" value="@module" />
-                                                <input type="hidden" name="id" value="@id" />
-                                                <input type="hidden" name="isActive" value="@(isActive ? "false" : "true")" />
-                                                <button class="btn btn-sm btn-outline-secondary">@(isActive ? "Deactivate" : "Activate")</button>
-                                            </form>
-                                        }
+                                            @if (module == "complaints" && !isTerminalComplaint)
+                                            {
+                                                <form asp-action="UpdateStatus"
+                                                      method="post"
+                                                      class="sa-action-form">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="module" value="@module" />
+                                                    <input type="hidden" name="id" value="@id" />
+
+                                                    <select name="status" class="form-select form-select-sm">
+                                                        @foreach (var s in new[] { "InProgress", "Resolved", "Rejected" })
+                                                        {
+                                                            var selected =
+                                                                statusText.Equals(s, StringComparison.OrdinalIgnoreCase) ||
+                                                                (statusText.Equals("Open", StringComparison.OrdinalIgnoreCase) &&
+                                                                 s == "InProgress");
+
+                                                            <option value="@s" selected="@(selected ? "selected" : null)">
+                                                                @s
+                                                            </option>
+                                                        }
+                                                    </select>
+
+                                                    <input name="adminRemarks"
+                                                           value="@Prop(row, "adminRemarks")"
+                                                           class="form-control form-control-sm"
+                                                           placeholder="Admin remarks"
+                                                           style="max-width:160px" />
+
+                                                    <button class="btn btn-sm btn-outline-primary">
+                                                        Update
+                                                    </button>
+                                                </form>
+                                            }
+                                            else if (isBooleanStatusModule)
+                                            {
+                                                <form asp-action="UpdateStatus"
+                                                      method="post"
+                                                      class="sa-action-form">
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden" name="module" value="@module" />
+                                                    <input type="hidden" name="id" value="@id" />
+                                                    <input type="hidden"
+                                                           name="isActive"
+                                                           value="@(isActive ? "false" : "true")" />
+
+                                                    <button class="btn btn-sm btn-outline-secondary">
+                                                        @(isActive ? "Deactivate" : "Activate")
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -299,10 +855,15 @@
         </div>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(module) && new[] { "residents", "guests", "parcels", "complaints", "amenity-logs" }.Contains(module))
+    @if (!string.IsNullOrWhiteSpace(module) &&
+         new[] { "residents", "guests", "parcels", "complaints", "amenity-logs" }.Contains(module))
     {
         <div class="mt-3">
-            <a asp-action="Report" asp-route-module="@module" class="btn btn-outline-secondary">Open @ViewBag.Title report</a>
+            <a asp-action="Report"
+               asp-route-module="@module"
+               class="btn btn-outline-secondary">
+                Open @ViewBag.Title report
+            </a>
         </div>
     }
 </div>
@@ -311,14 +872,20 @@
     (function () {
         const searchInput = document.getElementById('tableSearch');
         const wingFilter = document.getElementById('wingFilter');
+
         function applyFilters() {
-            const q = (searchInput?.value || '').toLowerCase();
-            const w = (wingFilter?.value || '').toLowerCase();
-            document.querySelectorAll('#dataRows tr').forEach(r => {
-                const txt = r.innerText.toLowerCase();
-                r.hidden = (q && !txt.includes(q)) || (w && !txt.includes(w));
+            const query = (searchInput?.value || '').toLowerCase().trim();
+            const wing = (wingFilter?.value || '').toLowerCase().trim();
+
+            document.querySelectorAll('#dataRows tr').forEach(row => {
+                const text = row.innerText.toLowerCase();
+
+                row.hidden =
+                    (query && !text.includes(query)) ||
+                    (wing && !text.includes(wing));
             });
         }
+
         searchInput?.addEventListener('input', applyFilters);
         wingFilter?.addEventListener('change', applyFilters);
     })();

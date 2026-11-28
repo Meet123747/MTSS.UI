@@ -1,3 +1,4 @@
+
 @using System.Text.Json
 @{
     ViewData["Title"] = "Resident Dashboard";
@@ -40,10 +41,64 @@
     <a class="resident-hero-btn" asp-action="CreateComplaint"><span data-icon="plus" class="mtss-icon-sm"></span> New complaint</a>
 </div>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success resident-alert">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger resident-alert">@TempData["Error"]</div>
+}
+
 @if (ViewBag.ErrorMessage != null)
 {
     <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div>
 }
+
+@* RESIDENT HOME / AWAY STATUS *@
+<div class="resident-card resident-card-body mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="section-heading mb-1">Your Availability</div>
+            <div class="section-note">
+                Let your Society Admin know whether you are currently at home.
+                This helps manage incoming parcel deliveries.
+            </div>
+        </div>
+
+        @if (ViewBag.IsHome is bool isHome)
+        {
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <span class="status-pill @(isHome ? "success" : "warning")">
+                    @(isHome ? "● Home" : "● Away")
+                </span>
+
+                <form asp-controller="Resident"
+                      asp-action="UpdateAvailability"
+                      method="post"
+                      class="m-0">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="isHome"
+                           value="@(!isHome ? "true" : "false")" />
+
+                    <button type="submit" class="btn btn-resident">
+                        @(isHome ? "Mark Me as Away" : "Mark Me as Home")
+                    </button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <span class="text-secondary small">
+                @(ViewBag.AvailabilityError ?? "Availability status unavailable.")
+            </span>
+        }
+    </div>
+</div>
 
 <div class="stat-grid">
     <div class="resident-card stat-card">

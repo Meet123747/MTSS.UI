@@ -1,47 +1,93 @@
+
 @using System.Text.Json
+
 @{
     ViewData["Title"] = "My Parcels";
     ViewData["PageHeading"] = "My parcels";
+
     var rows = ViewBag.Rows as List<JsonElement> ?? new();
     var endpointUnavailable = ViewBag.EndpointUnavailable is bool u && u;
-    var totalParcels = (int?)ViewBag.TotalParcels ?? rows.Count;
-    var awaitingCount = (int?)ViewBag.AwaitingCollection ?? 0;
-    var collectedCount = (int?)ViewBag.CollectedCount ?? 0;
 
     string Val(JsonElement row, params string[] keys)
     {
         if (row.ValueKind != JsonValueKind.Object) return "";
-        foreach (var k in keys)
-            if (row.TryGetProperty(k, out var v) && v.ValueKind != JsonValueKind.Null)
-                return v.ToString();
+
+        foreach (var key in keys)
+        {
+            if (row.TryGetProperty(key, out var value) &&
+                value.ValueKind != JsonValueKind.Null)
+                return value.ToString();
+        }
+
         return "";
     }
-    string FormatDate(string raw) => DateTime.TryParse(raw, out var dt) ? dt.ToString("dd MMM yyyy, hh:mm tt") : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
+
+    string FormatDate(string raw) =>
+        DateTime.TryParse(raw, out var dt)
+            ? dt.ToString("dd MMM yyyy, hh:mm tt")
+            : (string.IsNullOrWhiteSpace(raw) ? "—" : raw);
+
+    var totalParcels = rows.Count;
+
+    var awaitingCount = rows.Count(row =>
+    {
+        var status = Val(row, "status");
+        return status.Equals("Received", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("Stored", StringComparison.OrdinalIgnoreCase);
+    });
+
+    var collectedCount = rows.Count(row =>
+        Val(row, "status").Equals(
+            "Collected", StringComparison.OrdinalIgnoreCase));
 }
 
 <div class="page-intro">
     <div>
         <div class="page-eyebrow">RESIDENT SERVICES</div>
         <h1 class="page-title">My Parcels</h1>
-        <p class="page-subtitle">Parcel assistance and collection information.</p>
+        <p class="page-subtitle">
+            Track your deliveries and confirm parcel collection.
+        </p>
     </div>
-    <a class="btn btn-outline-resident" asp-action="Dashboard">← Back to Overview</a>
+
+    <a class="btn btn-outline-resident" asp-action="Dashboard">
+        ← Back to Overview
+    </a>
 </div>
 
 @if (!endpointUnavailable && ViewBag.ErrorMessage != null)
 {
-    <div class="alert alert-danger resident-alert">@ViewBag.ErrorMessage</div>
+    <div class="alert alert-danger resident-alert">
+        @ViewBag.ErrorMessage
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success resident-alert">
+        @TempData["Success"]
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger resident-alert">
+        @TempData["Error"]
+    </div>
 }
 
 @if (endpointUnavailable)
 {
     <div class="resident-card resident-card-body">
         <div class="empty-state">
-            <div class="empty-icon"><span data-icon="package"></span></div>
-            <strong>Parcel services are managed centrally</strong>
+            <div class="empty-icon">
+                <span data-icon="package"></span>
+            </div>
+
+            <strong>Parcel services are currently unavailable</strong>
+
             <p class="mx-auto" style="max-width:560px">
-                Parcel registration, tracking and collection-status management are currently handled centrally through the SocietyAdmin panel.
-                Residents should contact their SocietyAdmin for parcel-related assistance.
+                Please contact your Society Admin for parcel-related assistance.
             </p>
         </div>
     </div>
@@ -50,27 +96,35 @@ else
 {
     <div class="stat-grid">
         <div class="resident-card stat-card">
-            <div class="stat-icon"><span data-icon="package"></span></div>
+            <div class="stat-icon">
+                <span data-icon="package"></span>
+            </div>
             <div>
                 <div class="stat-label">Total Parcels</div>
                 <div class="stat-value">@totalParcels</div>
                 <div class="stat-note">All parcels registered to your profile</div>
             </div>
         </div>
+
         <div class="resident-card stat-card">
-            <div class="stat-icon"><span data-icon="clock"></span></div>
+            <div class="stat-icon">
+                <span data-icon="clock"></span>
+            </div>
             <div>
                 <div class="stat-label">Awaiting Collection</div>
                 <div class="stat-value">@awaitingCount</div>
-                <div class="stat-note">Status: Received</div>
+                <div class="stat-note">Received or safely stored</div>
             </div>
         </div>
+
         <div class="resident-card stat-card">
-            <div class="stat-icon"><span data-icon="check"></span></div>
+            <div class="stat-icon">
+                <span data-icon="check"></span>
+            </div>
             <div>
                 <div class="stat-label">Collected</div>
                 <div class="stat-value">@collectedCount</div>
-                <div class="stat-note">Status: Collected</div>
+                <div class="stat-note">Collection confirmed by you</div>
             </div>
         </div>
     </div>
@@ -79,24 +133,44 @@ else
         @if (rows.Count == 0)
         {
             <div class="empty-state">
-                <div class="empty-icon"><span data-icon="package"></span></div>
+                <div class="empty-icon">
+                    <span data-icon="package"></span>
+                </div>
+
                 <strong>No parcels found</strong>
-                <p>Parcels registered for you by your Society Admin will appear here.</p>
+
+                <p>
+                    Parcels registered for you by your Society Admin will appear here.
+                </p>
             </div>
         }
         else
         {
             <div class="resident-toolbar">
-                <div><h2 class="section-heading">Parcel Deliveries <span class="badge text-bg-light ms-1">@rows.Count</span></h2></div>
+                <div>
+                    <h2 class="section-heading">
+                        Parcel Deliveries
+                        <span class="badge text-bg-light ms-1">@rows.Count</span>
+                    </h2>
+                </div>
+
                 <div class="resident-toolbar-controls">
-                    <select id="parcelStatusFilter" class="form-select" style="width:auto">
+                    <select id="parcelStatusFilter"
+                            class="form-select"
+                            style="width:auto">
                         <option value="">All statuses</option>
-                        <option value="received">Received (Awaiting collection)</option>
+                        <option value="received">Received</option>
+                        <option value="stored">Stored</option>
                         <option value="collected">Collected</option>
                     </select>
-                    <input id="parcelSearch" class="form-control" style="width:240px" placeholder="Search courier or tracking..." />
+
+                    <input id="parcelSearch"
+                           class="form-control"
+                           style="width:240px"
+                           placeholder="Search courier or tracking..." />
                 </div>
             </div>
+
             <div class="resident-table-wrap">
                 <table class="resident-table resident-table-cards">
                     <thead>
@@ -109,6 +183,7 @@ else
                             <th>Action</th>
                         </tr>
                     </thead>
+
                     <tbody id="parcelRows">
                         @foreach (var row in rows)
                         {
@@ -118,22 +193,95 @@ else
                             var received = Val(row, "receivedAt");
                             var collected = Val(row, "collectedAt");
                             var status = Val(row, "status");
-                            var isCollected = status.Equals("Collected", StringComparison.OrdinalIgnoreCase);
+
+                            var isCollected = status.Equals(
+                                "Collected",
+                                StringComparison.OrdinalIgnoreCase);
+
+                            var isStored = status.Equals(
+                                "Stored",
+                                StringComparison.OrdinalIgnoreCase);
+
+                            var canCollect = !isCollected &&
+                                (isStored || status.Equals(
+                                    "Received",
+                                    StringComparison.OrdinalIgnoreCase));
 
                             <tr data-status="@status.ToLowerInvariant()">
-                                <td data-label="Courier"><strong>@(string.IsNullOrWhiteSpace(courier) ? "—" : courier)</strong></td>
-                                <td data-label="Tracking number">@(string.IsNullOrWhiteSpace(tracking) ? "—" : tracking)</td>
-                                <td data-label="Received">@FormatDate(received)</td>
-                                <td data-label="Collected">@FormatDate(collected)</td>
-                                <td data-label="Status">
-                                    <span class="status-pill @(isCollected ? "success" : "warning")">
-                                        @(isCollected ? "Collected" : "Received · Awaiting collection")
-                                    </span>
+                                <td data-label="Courier">
+                                    <strong>
+                                        @(string.IsNullOrWhiteSpace(courier)
+                                            ? "—"
+                                            : courier)
+                                    </strong>
                                 </td>
-                                <td data-label="Action">
-                                    @if (int.TryParse(idText, out var pid))
+
+                                <td data-label="Tracking number">
+                                    @(string.IsNullOrWhiteSpace(tracking)
+                                        ? "—"
+                                        : tracking)
+                                </td>
+
+                                <td data-label="Received">
+                                    @FormatDate(received)
+                                </td>
+
+                                <td data-label="Collected">
+                                    @FormatDate(collected)
+                                </td>
+
+                                <td data-label="Status">
+                                    @if (isCollected)
                                     {
-                                        <a class="action-link" asp-action="ParcelDetails" asp-route-id="@pid">View Details</a>
+                                        <span class="status-pill success">
+                                            Collected
+                                        </span>
+                                    }
+                                    else if (isStored)
+                                    {
+                                        <span class="status-pill warning">
+                                            Stored · Safekept
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill warning">
+                                            Received · Awaiting collection
+                                        </span>
+                                    }
+                                </td>
+
+                                <td data-label="Action">
+                                    @if (int.TryParse(idText, out var parcelId) &&
+                                         canCollect)
+                                    {
+                                        <form asp-controller="Resident"
+                                              asp-action="ConfirmParcelCollection"
+                                              method="post"
+                                              class="d-inline parcel-collection-form"
+                                              data-courier="@courier"
+                                              data-tracking="@tracking">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@parcelId" />
+
+                                            <button type="button"
+                                                    class="parcel-confirm-open btn btn-sm btn-outline-resident"
+                                                    aria-haspopup="dialog"
+                                                    aria-controls="parcelConfirmationModal">
+                                                Confirm Collection
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (isCollected)
+                                    {
+                                        <span class="text-success">
+                                            <span data-icon="check"></span>
+                                            Confirmed
+                                        </span>
                                     }
                                     else
                                     {
@@ -147,22 +295,292 @@ else
             </div>
         }
     </div>
+
+    <div id="parcelConfirmationModal"
+         class="parcel-confirmation-overlay"
+         role="presentation"
+         hidden>
+        <section class="parcel-confirmation-dialog"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="parcelConfirmationTitle"
+                 aria-describedby="parcelConfirmationMessage"
+                 tabindex="-1">
+            <button type="button"
+                    class="parcel-confirmation-close"
+                    aria-label="Close confirmation dialog">
+                &times;
+            </button>
+
+            <div class="parcel-confirmation-icon" aria-hidden="true">
+                <span data-icon="package"></span>
+            </div>
+
+            <h2 id="parcelConfirmationTitle">Confirm Parcel Collection</h2>
+            <p id="parcelConfirmationMessage">
+                Have you physically received this parcel? Please confirm only after collecting it.
+            </p>
+
+            <dl class="parcel-confirmation-details">
+                <div>
+                    <dt>Courier</dt>
+                    <dd id="parcelConfirmationCourier">—</dd>
+                </div>
+                <div>
+                    <dt>Tracking number</dt>
+                    <dd id="parcelConfirmationTracking">—</dd>
+                </div>
+            </dl>
+
+            <div class="parcel-confirmation-actions">
+                <button type="button"
+                        class="btn btn-outline-resident"
+                        data-parcel-confirm-cancel>
+                    Cancel
+                </button>
+                <button type="button"
+                        class="btn btn-resident"
+                        data-parcel-confirm-submit>
+                    Yes, I've Received It
+                </button>
+            </div>
+        </section>
+    </div>
 }
 
 @section Scripts {
+    <style>
+        .parcel-confirmation-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(18, 30, 50, 0.48);
+            backdrop-filter: blur(3px);
+        }
+
+        .parcel-confirmation-overlay[hidden] {
+            display: none;
+        }
+
+        .parcel-confirmation-dialog {
+            position: relative;
+            width: min(100%, 480px);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding: 32px;
+            border: 1px solid var(--mtss-border-subtle);
+            border-radius: 20px;
+            background: var(--mtss-surface);
+            color: var(--mtss-text);
+            box-shadow: 0 24px 70px rgba(14, 25, 43, 0.24);
+            text-align: center;
+        }
+
+        .parcel-confirmation-close {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            display: grid;
+            width: 38px;
+            height: 38px;
+            place-items: center;
+            border: 0;
+            border-radius: 12px;
+            background: transparent;
+            color: var(--mtss-text-muted);
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+
+        .parcel-confirmation-close:hover {
+            background: var(--mtss-surface-muted);
+            color: var(--mtss-text);
+        }
+
+        .parcel-confirmation-icon {
+            display: inline-grid;
+            width: 58px;
+            height: 58px;
+            margin-bottom: 16px;
+            place-items: center;
+            border-radius: 17px;
+            background: var(--mtss-primary-soft);
+            color: var(--mtss-primary);
+        }
+
+        .parcel-confirmation-icon [data-icon] {
+            width: 28px;
+            height: 28px;
+        }
+
+        .parcel-confirmation-dialog h2 {
+            margin: 0 28px 8px;
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .parcel-confirmation-dialog > p {
+            margin: 0 auto 20px;
+            color: var(--mtss-text-muted);
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+
+        .parcel-confirmation-details {
+            display: grid;
+            gap: 10px;
+            margin: 0 0 24px;
+            padding: 14px 16px;
+            border: 1px solid var(--mtss-border-subtle);
+            border-radius: 14px;
+            background: var(--mtss-surface-muted);
+            text-align: left;
+        }
+
+        .parcel-confirmation-details > div {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .parcel-confirmation-details dt {
+            flex: 0 0 auto;
+            color: var(--mtss-text-muted);
+            font-size: 0.82rem;
+        }
+
+        .parcel-confirmation-details dd {
+            min-width: 0;
+            margin: 0;
+            overflow-wrap: anywhere;
+            font-size: 0.86rem;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .parcel-confirmation-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .parcel-confirmation-actions .btn {
+            min-height: 44px;
+        }
+
+        @@media (max-width: 575.98px) {
+            .parcel-confirmation-overlay {
+                padding: 14px;
+            }
+
+            .parcel-confirmation-dialog {
+                padding: 28px 20px 20px;
+                border-radius: 18px;
+            }
+
+            .parcel-confirmation-actions {
+                flex-direction: column-reverse;
+            }
+
+            .parcel-confirmation-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+
     <script>
         (function () {
             const search = document.getElementById('parcelSearch');
             const filter = document.getElementById('parcelStatusFilter');
+            const modal = document.getElementById('parcelConfirmationModal');
+            const dialog = modal?.querySelector('.parcel-confirmation-dialog');
+            const courierLabel = document.getElementById('parcelConfirmationCourier');
+            const trackingLabel = document.getElementById('parcelConfirmationTracking');
+            const confirmButton = modal?.querySelector('[data-parcel-confirm-submit]');
+            const cancelButton = modal?.querySelector('[data-parcel-confirm-cancel]');
+            const closeButton = modal?.querySelector('.parcel-confirmation-close');
+            let activeForm = null;
+            let returnFocusTo = null;
+
             function apply() {
-                const q = (search?.value || '').toLowerCase();
-                const st = (filter?.value || '').toLowerCase();
-                document.querySelectorAll('#parcelRows tr').forEach(r => {
-                    const matchQ = !q || r.innerText.toLowerCase().includes(q);
-                    const matchS = !st || r.dataset.status === st;
-                    r.hidden = !(matchQ && matchS);
+                const query = (search?.value || '').toLowerCase();
+                const status = (filter?.value || '').toLowerCase();
+
+                document.querySelectorAll('#parcelRows tr').forEach(row => {
+                    const matchesQuery =
+                        !query || row.innerText.toLowerCase().includes(query);
+
+                    const matchesStatus =
+                        !status || row.dataset.status === status;
+
+                    row.hidden = !(matchesQuery && matchesStatus);
                 });
             }
+
+            function closeModal() {
+                if (!modal || modal.hidden) return;
+
+                modal.hidden = true;
+                document.body.style.overflow = '';
+                activeForm = null;
+                returnFocusTo?.focus();
+                returnFocusTo = null;
+            }
+
+            document.querySelectorAll('.parcel-confirm-open').forEach(button => {
+                button.addEventListener('click', () => {
+                    const form = button.closest('.parcel-collection-form');
+                    if (!form || form.dataset.submitting === 'true' || !modal) return;
+
+                    activeForm = form;
+                    returnFocusTo = button;
+                    courierLabel.textContent = form.dataset.courier || '—';
+                    trackingLabel.textContent = form.dataset.tracking || '—';
+                    modal.hidden = false;
+                    document.body.style.overflow = 'hidden';
+                    dialog?.focus();
+                });
+            });
+
+            confirmButton?.addEventListener('click', () => {
+                if (!activeForm || activeForm.dataset.submitting === 'true') return;
+
+                confirmButton.disabled = true;
+                confirmButton.textContent = 'Submitting...';
+                activeForm.requestSubmit();
+            });
+
+            document.querySelectorAll('.parcel-collection-form').forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (form.dataset.submitting === 'true') {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    form.dataset.submitting = 'true';
+                    form.querySelectorAll('button[type="submit"]').forEach(button => {
+                        button.disabled = true;
+                    });
+                    if (confirmButton && activeForm === form) {
+                        confirmButton.disabled = true;
+                        confirmButton.textContent = 'Submitting...';
+                    }
+                });
+            });
+
+            cancelButton?.addEventListener('click', closeModal);
+            closeButton?.addEventListener('click', closeModal);
+            modal?.addEventListener('click', event => {
+                if (event.target === modal) closeModal();
+            });
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && modal && !modal.hidden) closeModal();
+            });
+
             search?.addEventListener('input', apply);
             filter?.addEventListener('change', apply);
         })();
